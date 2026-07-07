@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Roamize</title>
+<meta name="description" content="Roamize — Nathan's personal trip HQ">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roamize">
+<meta name="theme-color" content="#0b0e14">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ============================================================
+   ROAMIZE — design tokens. Change the vibe of the whole app here.
+   ============================================================ */
+:root{
+  --bg:#0b0e14;
+  --surface:#131826;
+  --surface-2:#1a2133;
+  --border:#232c42;
+  --text:#e9edf5;
+  --muted:#8b95ab;
+  --accent:#5176AB;        /* Mize blue */
+  --accent-light:#7da2d9;
+  --accent-dim:rgba(81,118,171,.18);
+  --good:#5fb98a; --warn:#d9a55f; --bad:#d96b6b;
+  --radius:16px;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  overscroll-behavior:none;-webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top);
+}
+button{font-family:var(--font);border:none;background:none;color:inherit;cursor:pointer}
+input,textarea,select{
+  font-family:var(--font);background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:10px 12px;font-size:15px;width:100%;
+  outline:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+::placeholder{color:var(--muted);opacity:.7}
+
+/* ---------- header ---------- */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(11,14,20,.97),rgba(11,14,20,.88));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:19px;letter-spacing:-.3px;user-select:none}
+.logo .mark{
+  width:28px;height:28px;border-radius:8px;background:var(--accent);
+  display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;
+}
+.trip-switch{
+  display:flex;align-items:center;gap:6px;background:var(--surface);
+  border:1px solid var(--border);border-radius:999px;padding:7px 12px;
+  font-size:14px;font-weight:600;max-width:52vw;
+}
+.trip-switch span.name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip-switch svg{flex:none;opacity:.6}
+
+/* ---------- layout ---------- */
+main{padding:calc(env(safe-area-inset-top) + 62px) 0 calc(env(safe-area-inset-bottom) + 78px)}
+.tab{display:none;padding:14px 16px;animation:fadein .18s ease}
+.tab.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- bottom nav ---------- */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:900;
+  display:flex;justify-content:space-around;
+  padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
+  background:rgba(11,14,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+}
+nav button{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:11px;font-weight:600;color:var(--muted);padding:6px 0;border-radius:12px;
+  transition:color .15s;
+}
+nav button.active{color:var(--accent-light)}
+nav button svg{width:23px;height:23px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:12px;
+}
+.card h3{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-label{
+  font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:18px 2px 8px;display:flex;justify-content:space-between;align-items:center;
+}
+.section-label button{color:var(--accent-light);font-size:12px;font-weight:700;letter-spacing:0;text-transform:none}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px}
+.kv .k{color:var(--muted);flex:none}
+.kv .v{text-align:right;word-break:break-word;font-weight:500}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;background:var(--accent-dim);
+  color:var(--accent-light);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;
+}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:26px 10px;line-height:1.5}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--accent);color:#fff;font-weight:700;font-size:15px;
+  border-radius:12px;padding:12px 18px;width:100%;transition:opacity .15s;
+}
+.btn:active{opacity:.8}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn.small{width:auto;padding:8px 14px;font-size:13px;border-radius:10px}
+.icon-btn{padding:6px;border-radius:8px;color:var(--muted);display:inline-flex}
+.row{display:flex;gap:10px;align-items:center}
+
+/* ---------- home ---------- */
+#countdown{
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;
+  background:linear-gradient(135deg,var(--accent) 0%,#33507e 100%);
+  color:#fff;position:relative;overflow:hidden;
+}
+#countdown .big{font-size:26px;font-weight:800;letter-spacing:-.5px}
+#countdown .sub{font-size:13px;opacity:.85;margin-top:2px;font-weight:500}
+#goldenRow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+#goldenRow::-webkit-scrollbar{display:none}
+#map{
+  height:44vh;min-height:300px;border-radius:var(--radius);
+  border:1px solid var(--border);z-index:1;
+}
+.leaflet-container{background:#0b0e14;font-family:var(--font)}
+.pin-dot{
+  width:30px;height:30px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
+  background:var(--accent);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);
+  display:grid;place-items:center;
+}
+.pin-dot span{transform:rotate(45deg);font-size:13px}
+.pin-dot.base{background:#d9a55f}
+.pin-dot.done{background:#3a4763;opacity:.75}
+.leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border-radius:12px;border:1px solid var(--border)}
+.leaflet-popup-tip{background:var(--surface)}
+.leaflet-popup-content{margin:12px 14px;font-size:14px;line-height:1.45}
+.popup-actions{display:flex;gap:8px;margin-top:8px}
+.popup-actions button{font-size:12px;font-weight:700;color:var(--accent-light);padding:4px 0}
+
+.pin-item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--border)}
+.pin-item:last-child{border-bottom:none}
+.pin-item .emoji{font-size:19px;flex:none}
+.pin-item .info{flex:1;min-width:0}
+.pin-item .name{font-size:14.5px;font-weight:600}
+.pin-item .name.done{text-decoration:line-through;color:var(--muted)}
+.pin-item .note{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wind-chip{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;flex:none}
+
+.day{margin-bottom:10px}
+.day .day-head{display:flex;justify-content:space-between;align-items:center;padding:4px 2px}
+.day .day-head .d{font-size:14px;font-weight:700}
+.day .day-head .d small{color:var(--muted);font-weight:600;margin-left:6px}
+.anchor{
+  display:flex;gap:10px;align-items:baseline;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:6px;font-size:14px;
+}
+.anchor .t{color:var(--accent-light);font-weight:700;font-size:12.5px;flex:none;min-width:52px}
+.anchor .x{margin-left:auto;color:var(--muted);font-size:16px;padding:0 2px}
+.day .open-day{color:var(--muted);font-size:13px;padding:8px 2px;font-style:italic}
+.add-anchor{color:var(--accent-light);font-size:12.5px;font-weight:700;padding:7px 2px}
+
+/* ---------- explore chat ---------- */
+#tab-explore{display:none;padding:0}
+#tab-explore.active{display:flex;flex-direction:column;height:calc(100dvh - 62px - 78px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+#chatScroll{flex:1;overflow-y:auto;padding:16px 16px 8px;-webkit-overflow-scrolling:touch}
+.msg{max-width:86%;margin-bottom:14px;line-height:1.5;font-size:15px;white-space:pre-wrap;word-break:break-word}
+.msg.user{
+  margin-left:auto;background:var(--accent);color:#fff;
+  border-radius:18px 18px 4px 18px;padding:11px 15px;
+}
+.msg.assistant{margin-right:auto}
+.msg.assistant .bubble{padding:2px 0}
+.msg .who{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.msg .who .avatar{width:22px;height:22px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:11px;color:#fff;font-weight:800}
+.sugg-card{
+  background:var(--surface);border:1px solid var(--accent);border-radius:14px;
+  padding:12px 14px;margin:10px 0;
+}
+.sugg-card .sn{font-weight:700;font-size:14.5px;display:flex;gap:7px;align-items:center}
+.sugg-card .sd{font-size:13px;color:var(--muted);margin:5px 0 10px;line-height:1.45}
+.sugg-card .btn{padding:9px 14px;font-size:13.5px}
+.sugg-card .added{color:var(--good);font-weight:700;font-size:13.5px;display:flex;gap:6px;align-items:center}
+#composer{
+  padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;
+  background:var(--bg);
+}
+#chatInput{
+  flex:1;border-radius:20px;max-height:110px;resize:none;line-height:1.4;padding:11px 15px;font-size:15px;
+}
+#sendBtn{
+  width:40px;height:40px;flex:none;border-radius:50%;background:var(--accent);color:#fff;
+  display:grid;place-items:center;transition:opacity .15s;
+}
+#sendBtn:disabled{opacity:.4}
+.typing{display:inline-flex;gap:4px;padding:6px 2px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.explore-hint{
+  display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none;
+}
+.explore-hint::-webkit-scrollbar{display:none}
+.explore-hint button{
+  flex:none;background:var(--surface);border:1px solid var(--border);border-radius:999px;
+  padding:8px 14px;font-size:13px;color:var(--text);font-weight:500;
+}
+
+/* ---------- modal / sheet ---------- */
+#overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;
+  display:none;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+}
+#overlay.open{display:flex}
+#sheet{
+  background:var(--surface);width:100%;max-width:560px;max-height:86dvh;overflow-y:auto;
+  border-radius:22px 22px 0 0;padding:10px 18px calc(env(safe-area-inset-bottom) + 20px);
+  animation:slideup .22s ease;
+}
+@keyframes slideup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+#sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--border);margin:4px auto 14px}
+#sheet h2{font-size:18px;font-weight:800;margin-bottom:14px;letter-spacing:-.3px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field-row{display:flex;gap:10px}.field-row .field{flex:1}
+.sheet-list button.opt{
+  width:100%;display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:12px;
+  font-size:15px;font-weight:600;text-align:left;
+}
+.sheet-list button.opt:active{background:var(--surface-2)}
+.sheet-list .opt .sub{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
+.danger{color:var(--bad)!important}
+
+/* ---------- toast & confetti ---------- */
+#toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);transform:translateX(-50%) translateY(20px);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+  padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:600;z-index:1200;
+  opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.4);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.confetti{position:fixed;top:-12px;z-index:1300;font-size:18px;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
+
+/* dice fab */
+#diceBtn{
+  position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:800;
+  width:52px;height:52px;border-radius:50%;background:var(--surface);border:1px solid var(--border);
+  font-size:23px;display:none;place-items:center;box-shadow:0 4px 18px rgba(0,0,0,.45);
+  transition:transform .15s;
+}
+#diceBtn:active{transform:scale(.9) rotate(20deg)}
+#diceBtn.show{display:grid}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="logoBtn"><div class="mark">R</div>Roamize</div>
+  <button class="trip-switch" id="tripSwitchBtn">
+    <span class="emoji" id="tsEmoji">🌲</span>
+    <span class="name" id="tsName">Trip</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</header>
+
+<main>
+  <!-- DETAILS -->
+  <section class="tab" id="tab-details"></section>
+
+  <!-- HOME -->
+  <section class="tab active" id="tab-home">
+    <div id="countdown"></div>
+    <div id="goldenRow"></div>
+    <div id="map"></div>
+    <div class="section-label">Shoot list <button id="addPinBtn">+ Add spot</button></div>
+    <div class="card" id="pinList"></div>
+    <div class="section-label">The loose plan</div>
+    <div id="schedule"></div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section class="tab" id="tab-explore">
+    <div id="chatScroll"></div>
+    <div class="explore-hint" id="hintRow"></div>
+    <div id="composer">
+      <textarea id="chatInput" rows="1" placeholder="Ask about the trip…"></textarea>
+      <button id="sendBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </div>
+  </section>
+</main>
+
+<button id="diceBtn" title="Feeling spontaneous?">🎲</button>
+
+<nav>
+  <button data-tab="details">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+    Details
+  </button>
+  <button data-tab="home" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Home
+  </button>
+  <button data-tab="explore">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-2.5 5.5L8 16l2.5-5.5z"/></svg>
+    Explore
+  </button>
+</nav>
+
+<div id="overlay"><div id="sheet"></div></div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============================================================
+   ROAMIZE — data layer.
+   Everything the app knows lives in one object, saved to
+   localStorage. Edit DEFAULT_DATA to change the seed trip,
+   or use Settings → Export/Import to move data between devices.
+   ============================================================ */
+const STORE_KEY = 'roamize.v1';
+
+const DEFAULT_DATA = {
+  version: 1,
+  settings: { apiKey: '', userName: 'Nathan', logoTaps: 0 },
+  activeTripId: 'northshore26',
+  trips: [{
+    id: 'northshore26',
+    name: 'North Shore, MN',
+    emoji: '🌲',
+    start: '2026-07-27',
+    end: '2026-08-01',
+    base: { label: 'Airbnb', address: 'Add your Airbnb address in Details', lat: 47.0227, lng: -91.6704 },
+    logistics: [
+      { id: 'l1', type: 'flight', title: 'Flight out', fields: { Airline: '', 'Flight #': '', Departs: '', Arrives: '', Confirmation: '' }, notes: '' },
+      { id: 'l2', type: 'car',    title: 'Rental car', fields: { Company: '', 'Pickup': '', 'Drop-off': '', Confirmation: '' }, notes: '' },
+      { id: 'l3', type: 'stay',   title: 'Airbnb', fields: { Address: '', 'Check-in': '', 'Check-out': '', 'Door code': '' }, notes: '' }
+    ],
+    pins: [
+      { id: 'p1', name: 'Split Rock Lighthouse', lat: 47.2003, lng: -91.3673, note: 'Classic North Shore shot — sunrise side light. State park: check drone permit rules.', type: 'shoot', done: false },
+      { id: 'p2', name: 'Palisade Head',         lat: 47.3205, lng: -91.2100, note: '350ft cliffs over Superior. Epic drone pullback territory.', type: 'shoot', done: false },
+      { id: 'p3', name: 'Tettegouche High Falls', lat: 47.3397, lng: -91.1967, note: 'Tallest falls fully in MN. Short hike in.', type: 'shoot', done: false },
+      { id: 'p4', name: 'Gooseberry Falls',      lat: 47.1397, lng: -91.4695, note: 'Multi-tier falls, easy access. Goes early to beat crowds.', type: 'shoot', done: false },
+      { id: 'p5', name: 'Aerial Lift Bridge',    lat: 46.7787, lng: -92.0928, note: 'Duluth icon. Time-lapse of a bridge lift + ship entry?', type: 'shoot', done: false },
+      { id: 'p6', name: 'Grand Marais Harbor',   lat: 47.7455, lng: -90.3343, note: 'Artsy harbor town. Lighthouse walk + food stop.', type: 'shoot', done: false }
+    ],
+    schedule: {
+      '2026-07-27': [{ id: 'a1', time: '', title: 'Arrive, settle into Airbnb, scout sunset spot' }]
+    },
+    gear: [
+      { name: 'Drone + charged batteries (all of them)', done: false },
+      { name: 'ND filters', done: false },
+      { name: 'SD cards — formatted', done: false },
+      { name: 'Camera + lenses', done: false },
+      { name: 'Chargers / power bank', done: false },
+      { name: 'Layers — Superior makes its own weather', done: false }
+    ]
+  }]
+};
+
+let DB = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function trip() { return DB.trips.find(t => t.id === DB.activeTripId) || DB.trips[0]; }
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- date helpers ---------- */
+function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function fmtDate(d, opts) { return d.toLocaleDateString('en-US', opts || { weekday:'short', month:'short', day:'numeric' }); }
+function isoDate(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function tripDays(t) {
+  const out = []; if (!t.start || !t.end) return out;
+  let d = parseDate(t.start); const end = parseDate(t.end);
+  while (d <= end) { out.push(isoDate(d)); d = new Date(d.getTime() + 86400000); }
+  return out;
+}
+function openDays(t) { return tripDays(t).filter(d => !(t.schedule[d] || []).length); }
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---------- sheet (bottom modal) ---------- */
+const overlay = document.getElementById('overlay');
+const sheetEl = document.getElementById('sheet');
+function openSheet(html) {
+  sheetEl.innerHTML = '<div class="grab"></div>' + html;
+  overlay.classList.add('open');
+}
+function closeSheet() { overlay.classList.remove('open'); sheetEl.innerHTML = ''; }
+overlay.addEventListener('click', e => { if (e.target === overlay) closeSheet(); });
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+function switchTab(name) {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.id === 'tab-' + name));
+  document.getElementById('diceBtn').classList.toggle('show', name === 'home');
+  if (name === 'home' && MAP) setTimeout(() => MAP.invalidateSize(), 60);
+  if (name === 'explore') initExplore();
+}
+
+/* ---------- trip switcher ---------- */
+document.getElementById('tripSwitchBtn').addEventListener('click', () => {
+  const rows = DB.trips.map(t => `
+    <button class="opt" onclick="setTrip('${t.id}')">
+      <span style="font-size:22px">${esc(t.emoji)}</span>
+      <span>${esc(t.name)}<span class="sub">${fmtDate(parseDate(t.start),{month:'short',day:'numeric'})} – ${fmtDate(parseDate(t.end),{month:'short',day:'numeric'})}</span></span>
+      ${t.id === DB.activeTripId ? '<span style="margin-left:auto;color:var(--accent-light)">✓</span>' : ''}
+    </button>`).join('');
+  openSheet(`<h2>Trips</h2><div class="sheet-list">${rows}
+    <button class="opt" onclick="newTripForm()"><span style="font-size:22px">＋</span><span>New trip</span></button>
+    <button class="opt" onclick="settingsForm()"><span style="font-size:22px">⚙️</span><span>Settings</span></button>
+  </div>`);
+});
+function setTrip(id) { DB.activeTripId = id; save(); closeSheet(); renderAll(); }
+function newTripForm() {
+  openSheet(`<h2>New trip</h2>
+    <div class="field"><label>Name</label><input id="ntName" placeholder="Moab, UT"></div>
+    <div class="field"><label>Emoji</label><input id="ntEmoji" placeholder="🏜️" maxlength="4"></div>
+    <div class="field-row">
+      <div class="field"><label>Start</label><input id="ntStart" type="date"></div>
+      <div class="field"><label>End</label><input id="ntEnd" type="date"></div>
+    </div>
+    <button class="btn" onclick="createTrip()">Create trip</button>`);
+}
+function createTrip() {
+  const name = document.getElementById('ntName').value.trim();
+  const start = document.getElementById('ntStart').value, end = document.getElementById('ntEnd').value;
+  if (!name || !start || !end) return toast('Name and dates required');
+  const t = {
+    id: uid(), name, emoji: document.getElementById('ntEmoji').value.trim() || '📍',
+    start, end,
+    base: { label: 'Home base', address: '', lat: 44.9778, lng: -93.2650 },
+    logistics: [
+      { id: uid(), type: 'flight', title: 'Flight out', fields: { Airline:'', 'Flight #':'', Departs:'', Arrives:'', Confirmation:'' }, notes: '' },
+      { id: uid(), type: 'car', title: 'Rental car', fields: { Company:'', Pickup:'', 'Drop-off':'', Confirmation:'' }, notes: '' },
+      { id: uid(), type: 'stay', title: 'Stay', fields: { Address:'', 'Check-in':'', 'Check-out':'' }, notes: '' }
+    ],
+    pins: [], schedule: {}, gear: []
+  };
+  DB.trips.push(t); DB.activeTripId = t.id; save(); closeSheet(); renderAll();
+  toast('Trip created — drop some pins 📍');
+}
+function deleteTrip(id) {
+  if (DB.trips.length <= 1) return toast("Can't delete your only trip");
+  if (!confirm('Delete this trip and everything in it?')) return;
+  DB.trips = DB.trips.filter(t => t.id !== id);
+  DB.activeTripId = DB.trips[0].id; save(); closeSheet(); renderAll();
+}
+
+/* ---------- settings ---------- */
+function settingsForm() {
+  openSheet(`<h2>Settings</h2>
+    <div class="field"><label>Anthropic API key (stays on this device)</label>
+      <input id="setKey" type="password" placeholder="sk-ant-…" value="${esc(DB.settings.apiKey)}"></div>
+    <button class="btn" onclick="saveSettings()">Save</button>
+    <div style="height:14px"></div>
+    <button class="btn ghost" onclick="exportData()">Export trip data (JSON)</button>
+    <div style="height:10px"></div>
+    <button class="btn ghost" onclick="document.getElementById('impFile').click()">Import trip data</button>
+    <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(this)">
+    <div style="height:10px"></div>
+    <button class="btn ghost danger" onclick="deleteTrip('${trip().id}')">Delete current trip</button>
+    <p style="font-size:12px;color:var(--muted);margin-top:16px;text-align:center">Roamize v1 · built with Claude · data lives in your browser</p>`);
+}
+function saveSettings() {
+  DB.settings.apiKey = document.getElementById('setKey').value.trim();
+  save(); closeSheet(); toast('Saved');
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'roamize-backup.json'; a.click();
+}
+function importData(input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { const d = JSON.parse(r.result); if (!d.trips) throw 0; DB = d; save(); closeSheet(); renderAll(); toast('Imported ✓'); }
+    catch (e) { toast('Not a valid Roamize backup'); }
+  };
+  r.readAsText(f);
+}
+
+/* ============================================================
+   DETAILS TAB — logistics cards
+   ============================================================ */
+const TYPE_ICON = { flight: '✈️', car: '🚗', stay: '🏠', other: '📎' };
+function renderDetails() {
+  const t = trip();
+  const cards = t.logistics.map(l => {
+    const rows = Object.entries(l.fields).filter(([k,v]) => v)
+      .map(([k,v]) => `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
+    return `<div class="card">
+      <h3><span>${TYPE_ICON[l.type] || '📎'}</span>${esc(l.title)}
+        <button class="icon-btn" style="margin-left:auto" onclick="editLogistics('${l.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.8 2.8 0 1 1 4 4L7 21l-4 1 1-4z"/></svg>
+        </button></h3>
+      ${rows || '<div class="empty" style="padding:12px">Tap ✎ to fill in</div>'}
+      ${l.notes ? `<div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.45">${esc(l.notes)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const gear = (t.gear || []).map((g, i) => `
+    <div class="pin-item" onclick="toggleGear(${i})" style="cursor:pointer">
+      <span class="emoji">${g.done ? '✅' : '⬜️'}</span>
+      <div class="info"><div class="name ${g.done ? 'done' : ''}">${esc(g.name)}</div></div>
+    </div>`).join('');
+
+  document.getElementById('tab-details').innerHTML = `
+    <div class="section-label">Trip dates</div>
+    <div class="card">
+      <div class="kv"><span class="k">Trip</span><span class="v">${esc(t.emoji)} ${esc(t.name)}</span></div>
+      <div class="kv"><span class="k">Dates</span><span class="v">${fmtDate(parseDate(t.start))} → ${fmtDate(parseDate(t.end))}</span></div>
+      <div class="kv"><span class="k">Nights</span><span class="v">${tripDays(t).length - 1}</span></div>
+      <div style="margin-top:8px"><button class="btn ghost small" onclick="editTripForm()">Edit trip</button></div>
+    </div>
+    <div class="section-label">Logistics <button onclick="addLogisticsForm()">+ Add</button></div>
+    ${cards}
+    <div class="section-label">Home base</div>
+    <div class="card">
+      <div class="kv"><span class="k">Label</span><span class="v">${esc(t.base.label)}</span></div>
+      <div class="kv"><span class="k">Address</span><span class="v">${esc(t.base.address) || '—'}</span></div>
+      <div style="margin-top:8px"><button class="btn ghost small" onclick="editBaseForm()">Edit home base</button></div>
+    </div>
+    ${t.gear && t.gear.length ? `<div class="section-label">Gear check <button onclick="addGearForm()">+ Add</button></div><div class="card">${gear}</div>` : ''}
+  `;
+}
+function toggleGear(i) { trip().gear[i].done = !trip().gear[i].done; save(); renderDetails();
+  if (trip().gear.every(g => g.done)) { confettiBurst(); toast('Gear locked. Go make something great 🎬'); } }
+function addGearForm() {
+  const name = prompt('Add gear item:'); if (!name) return;
+  trip().gear.push({ name, done: false }); save(); renderDetails();
+}
+function editTripForm() {
+  const t = trip();
+  openSheet(`<h2>Edit trip</h2>
+    <div class="field"><label>Name</label><input id="etName" value="${esc(t.name)}"></div>
+    <div class="field"><label>Emoji</label><input id="etEmoji" value="${esc(t.emoji)}" maxlength="4"></div>
+    <div class="field-row">
+      <div class="field"><label>Start</label><input id="etStart" type="date" value="${t.start}"></div>
+      <div class="field"><label>End</label><input id="etEnd" type="date" value="${t.end}"></div>
+    </div>
+    <button class="btn" onclick="saveTripEdit()">Save</button>`);
+}
+function saveTripEdit() {
+  const t = trip();
+  t.name = document.getElementById('etName').value.trim() || t.name;
+  t.emoji = document.getElementById('etEmoji').value.trim() || t.emoji;
+  t.start = document.getElementById('etStart').value || t.start;
+  t.end = document.getElementById('etEnd').value || t.end;
+  save(); closeSheet(); renderAll();
+}
+function editBaseForm() {
+  const b = trip().base;
+  openSheet(`<h2>Home base</h2>
+    <div class="field"><label>Label</label><input id="ebLabel" value="${esc(b.label)}"></div>
+    <div class="field"><label>Address</label><input id="ebAddr" value="${esc(b.address)}"></div>
+    <div class="field-row">
+      <div class="field"><label>Latitude</label><input id="ebLat" type="number" step="any" value="${b.lat}"></div>
+      <div class="field"><label>Longitude</label><input id="ebLng" type="number" step="any" value="${b.lng}"></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Tip: in Apple/Google Maps, long-press your Airbnb → copy the coordinates.</p>
+    <button class="btn" onclick="saveBase()">Save</button>`);
+}
+function saveBase() {
+  const b = trip().base;
+  b.label = document.getElementById('ebLabel').value.trim() || b.label;
+  b.address = document.getElementById('ebAddr').value.trim();
+  b.lat = parseFloat(document.getElementById('ebLat').value) || b.lat;
+  b.lng = parseFloat(document.getElementById('ebLng').value) || b.lng;
+  save(); closeSheet(); renderAll();
+}
+function addLogisticsForm() {
+  openSheet(`<h2>Add logistics</h2>
+    <div class="field"><label>Type</label>
+      <select id="alType"><option value="flight">✈️ Flight</option><option value="car">🚗 Rental car</option><option value="stay">🏠 Stay</option><option value="other">📎 Other</option></select></div>
+    <div class="field"><label>Title</label><input id="alTitle" placeholder="Return flight"></div>
+    <button class="btn" onclick="createLogistics()">Add</button>`);
+}
+function createLogistics() {
+  const type = document.getElementById('alType').value;
+  const title = document.getElementById('alTitle').value.trim() || 'Untitled';
+  const fields = type === 'flight' ? { Airline:'', 'Flight #':'', Departs:'', Arrives:'', Confirmation:'' }
+    : type === 'car' ? { Company:'', Pickup:'', 'Drop-off':'', Confirmation:'' }
+    : type === 'stay' ? { Address:'', 'Check-in':'', 'Check-out':'' }
+    : { Info:'', Confirmation:'' };
+  trip().logistics.push({ id: uid(), type, title, fields, notes: '' });
+  save(); closeSheet(); renderDetails();
+}
+function editLogistics(id) {
+  const l = trip().logistics.find(x => x.id === id); if (!l) return;
+  const inputs = Object.entries(l.fields).map(([k,v]) =>
+    `<div class="field"><label>${esc(k)}</label><input data-lk="${esc(k)}" value="${esc(v)}"></div>`).join('');
+  openSheet(`<h2>${TYPE_ICON[l.type]} ${esc(l.title)}</h2>
+    <div class="field"><label>Title</label><input id="elTitle" value="${esc(l.title)}"></div>
+    ${inputs}
+    <div class="field"><label>Notes</label><textarea id="elNotes" rows="2">${esc(l.notes)}</textarea></div>
+    <button class="btn" onclick="saveLogistics('${id}')">Save</button>
+    <div style="height:10px"></div>
+    <button class="btn ghost danger" onclick="removeLogistics('${id}')">Delete</button>`);
+}
+function saveLogistics(id) {
+  const l = trip().logistics.find(x => x.id === id); if (!l) return;
+  l.title = document.getElementById('elTitle').value.trim() || l.title;
+  sheetEl.querySelectorAll('[data-lk]').forEach(inp => { l.fields[inp.dataset.lk] = inp.value.trim(); });
+  l.notes = document.getElementById('elNotes').value.trim();
+  save(); closeSheet(); renderDetails();
+}
+function removeLogistics(id) {
+  trip().logistics = trip().logistics.filter(x => x.id !== id);
+  save(); closeSheet(); renderDetails();
+}
+
+/* ============================================================
+   HOME TAB — countdown, map, pins, schedule
+   ============================================================ */
+let MAP = null, MARKERS = [];
+
+function renderCountdown() {
+  const t = trip();
+  const now = new Date(); now.setHours(0,0,0,0);
+  const start = parseDate(t.start), end = parseDate(t.end);
+  const days = Math.round((start - now) / 86400000);
+  let big, sub;
+  if (days > 1) { big = `T-minus ${days} days`; sub = `${t.emoji} ${t.name} · ${fmtDate(start)}`; }
+  else if (days === 1) { big = 'Tomorrow.'; sub = 'Charge every battery you own 🔋'; }
+  else if (now >= start && now <= end) {
+    const dayNum = Math.round((now - start) / 86400000) + 1;
+    big = `Day ${dayNum} of ${tripDays(t).length}`; sub = 'You’re out there. Go get the shot.';
+  } else if (now > end) { big = 'Trip wrapped 🎬'; sub = `${trip().pins.filter(p=>p.done).length}/${trip().pins.length} spots shot`; }
+  else { big = 'Go time.'; sub = t.name; }
+  document.getElementById('countdown').innerHTML = `<div class="big">${big}</div><div class="sub">${esc(sub)}</div>`;
+}
+
+function pinIcon(p, isBase) {
+  return L.divIcon({
+    className: '', iconSize: [30, 30], iconAnchor: [15, 28], popupAnchor: [0, -26],
+    html: `<div class="pin-dot ${isBase ? 'base' : (p && p.done ? 'done' : '')}"><span>${isBase ? '🏠' : (p && p.done ? '✓' : '📷')}</span></div>`
+  });
+}
+function renderMap() {
+  const t = trip();
+  if (!MAP) {
+    MAP = L.map('map', { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(MAP);
+    L.control.attribution({ prefix: '© OSM · CARTO' }).addTo(MAP);
+    MAP.on('contextmenu', e => quickAddPin(e.latlng)); // long-press on mobile
+  }
+  MARKERS.forEach(m => MAP.removeLayer(m)); MARKERS = [];
+  const pts = [];
+  const baseM = L.marker([t.base.lat, t.base.lng], { icon: pinIcon(null, true) }).addTo(MAP)
+    .bindPopup(`<b>🏠 ${esc(t.base.label)}</b><br><span style="color:var(--muted);font-size:12.5px">${esc(t.base.address) || 'Set address in Details'}</span>`);
+  MARKERS.push(baseM); pts.push([t.base.lat, t.base.lng]);
+  t.pins.forEach(p => {
+    const m = L.marker([p.lat, p.lng], { icon: pinIcon(p) }).addTo(MAP).bindPopup(popupHtml(p));
+    MARKERS.push(m); pts.push([p.lat, p.lng]);
+  });
+  if (pts.length > 1) MAP.fitBounds(pts, { padding: [36, 36] });
+  else MAP.setView(pts[0] || [46.78, -92.1], 9);
+}
+function popupHtml(p) {
+  const dist = haversine(trip().base, p);
+  return `<b>${esc(p.name)}</b><br>
+    <span style="color:#8b95ab;font-size:12.5px">${esc(p.note || '')}${p.note ? '<br>' : ''}${dist} from base</span>
+    <div class="popup-actions">
+      <button onclick="togglePin('${p.id}')">${p.done ? '↺ Unshoot' : '✓ Shot it'}</button>
+      <button onclick="droneCheck('${p.id}')">🚁 Conditions</button>
+      <button onclick="navTo(${p.lat},${p.lng})">🧭 Go</button>
+      <button onclick="removePin('${p.id}')" style="color:var(--bad)">✕</button>
+    </div>`;
+}
+function navTo(lat, lng) { window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, '_blank'); }
+function haversine(a, b) {
+  const R = 3958.8, toR = x => x * Math.PI / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  const mi = 2 * R * Math.asin(Math.sqrt(h));
+  return mi < 1 ? '< 1 mi' : Math.round(mi) + ' mi';
+}
+function togglePin(id) {
+  const p = trip().pins.find(x => x.id === id); if (!p) return;
+  p.done = !p.done; save(); renderHome();
+  if (p.done) toast(`${p.name} — in the can 🎞️`);
+  if (trip().pins.length && trip().pins.every(x => x.done)) { confettiBurst(); toast('Every spot shot. Legend. 🏆'); }
+}
+function removePin(id) {
+  trip().pins = trip().pins.filter(x => x.id !== id); save(); renderHome();
+}
+function quickAddPin(latlng) {
+  openSheet(`<h2>New spot</h2>
+    <div class="field"><label>Name</label><input id="qpName" placeholder="Secret overlook"></div>
+    <div class="field"><label>Note</label><input id="qpNote" placeholder="Why it's worth shooting"></div>
+    <button class="btn" onclick="createPin(${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)})">Drop pin</button>`);
+}
+document.getElementById('addPinBtn').addEventListener('click', () => {
+  openSheet(`<h2>Add spot</h2>
+    <div class="field"><label>Name</label><input id="qpName" placeholder="Palisade Head"></div>
+    <div class="field"><label>Note</label><input id="qpNote" placeholder="Why it's worth shooting"></div>
+    <div class="field-row">
+      <div class="field"><label>Latitude</label><input id="qpLat" type="number" step="any" placeholder="47.32"></div>
+      <div class="field"><label>Longitude</label><input id="qpLng" type="number" step="any" placeholder="-91.21"></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Or long-press anywhere on the map to drop a pin there.</p>
+    <button class="btn" onclick="createPin()">Add spot</button>`);
+});
+function createPin(lat, lng) {
+  const name = document.getElementById('qpName').value.trim(); if (!name) return toast('Give it a name');
+  lat = lat ?? parseFloat(document.getElementById('qpLat')?.value);
+  lng = lng ?? parseFloat(document.getElementById('qpLng')?.value);
+  if (isNaN(lat) || isNaN(lng)) return toast('Coordinates needed — or long-press the map');
+  trip().pins.push({ id: uid(), name, lat, lng, note: document.getElementById('qpNote').value.trim(), type: 'shoot', done: false });
+  save(); closeSheet(); renderHome(); toast('Pinned 📍');
+}
+function renderPinList() {
+  const t = trip();
+  document.getElementById('pinList').innerHTML = t.pins.length ? t.pins.map(p => `
+    <div class="pin-item">
+      <span class="emoji" style="cursor:pointer" onclick="togglePin('${p.id}')">${p.done ? '✅' : '📷'}</span>
+      <div class="info" style="cursor:pointer" onclick="flyTo('${p.id}')">
+        <div class="name ${p.done ? 'done' : ''}">${esc(p.name)}</div>
+        <div class="note">${esc(p.note || haversine(t.base, p) + ' from base')}</div>
+      </div>
+      <span class="wind-chip" id="wind-${p.id}" style="background:var(--surface-2);color:var(--muted)">…</span>
+    </div>`).join('')
+    : '<div class="empty">No spots yet. Long-press the map or ask Explore for ideas.</div>';
+  loadWindChips();
+}
+function flyTo(id) {
+  const p = trip().pins.find(x => x.id === id); if (!p || !MAP) return;
+  MAP.flyTo([p.lat, p.lng], 13, { duration: .8 });
+  const m = MARKERS.find(m => m.getLatLng().lat === p.lat && m.getLatLng().lng === p.lng);
+  if (m) setTimeout(() => m.openPopup(), 850);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ---------- schedule (loose by design) ---------- */
+function renderSchedule() {
+  const t = trip();
+  document.getElementById('schedule').innerHTML = tripDays(t).map(d => {
+    const anchors = (t.schedule[d] || []);
+    const dt = parseDate(d);
+    const items = anchors.map(a => `
+      <div class="anchor">
+        ${a.time ? `<span class="t">${esc(a.time)}</span>` : '<span class="t" style="opacity:.4">—</span>'}
+        <span>${esc(a.title)}</span>
+        <button class="x" onclick="removeAnchor('${d}','${a.id}')">✕</button>
+      </div>`).join('');
+    return `<div class="day">
+      <div class="day-head">
+        <span class="d">${fmtDate(dt, { weekday: 'long' })}<small>${fmtDate(dt, { month: 'short', day: 'numeric' })}</small></span>
+        <button class="add-anchor" onclick="addAnchorForm('${d}')">+ anchor</button>
+      </div>
+      ${items || '<div class="open-day">Open — room for spontaneity ✨</div>'}
+    </div>`;
+  }).join('');
+}
+function addAnchorForm(date) {
+  openSheet(`<h2>${fmtDate(parseDate(date), { weekday: 'long', month: 'short', day: 'numeric' })}</h2>
+    <div class="field"><label>What (keep it loose)</label><input id="anTitle" placeholder="Sunrise at Split Rock"></div>
+    <div class="field"><label>Time — optional</label><input id="anTime" placeholder="6:30 AM"></div>
+    <button class="btn" onclick="createAnchor('${date}')">Anchor it</button>`);
+}
+function createAnchor(date) {
+  const title = document.getElementById('anTitle').value.trim(); if (!title) return toast('What are you anchoring?');
+  const t = trip();
+  (t.schedule[date] = t.schedule[date] || []).push({ id: uid(), title, time: document.getElementById('anTime').value.trim() });
+  save(); closeSheet(); renderSchedule();
+}
+function removeAnchor(date, id) {
+  const t = trip();
+  t.schedule[date] = (t.schedule[date] || []).filter(a => a.id !== id);
+  if (!t.schedule[date].length) delete t.schedule[date];
+  save(); renderSchedule();
+}
+
+/* ============================================================
+   WEATHER + GOLDEN HOUR — Open-Meteo, free, no key 🌤️
+   ============================================================ */
+const wxCache = {};
+async function fetchWx(lat, lng) {
+  const key = lat.toFixed(2) + ',' + lng.toFixed(2);
+  if (wxCache[key] && Date.now() - wxCache[key].at < 30 * 60 * 1000) return wxCache[key].data;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+    `&current=wind_speed_10m,wind_gusts_10m,cloud_cover,temperature_2m,precipitation` +
+    `&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=2`;
+  const res = await fetch(url); const data = await res.json();
+  wxCache[key] = { at: Date.now(), data };
+  return data;
+}
+function windVerdict(mph, gust) {
+  if (mph <= 11 && gust <= 17) return { label: mph.toFixed(0) + ' mph', bg: 'rgba(95,185,138,.18)', fg: 'var(--good)', word: 'Send it 🚁' };
+  if (mph <= 18 && gust <= 25) return { label: mph.toFixed(0) + ' mph', bg: 'rgba(217,165,95,.18)', fg: 'var(--warn)', word: 'Flyable, stay sharp' };
+  return { label: mph.toFixed(0) + ' mph', bg: 'rgba(217,107,107,.18)', fg: 'var(--bad)', word: 'Keep it grounded' };
+}
+async function loadWindChips() {
+  for (const p of trip().pins) {
+    const el = document.getElementById('wind-' + p.id); if (!el) continue;
+    try {
+      const wx = await fetchWx(p.lat, p.lng);
+      const v = windVerdict(wx.current.wind_speed_10m, wx.current.wind_gusts_10m);
+      el.textContent = '🌬 ' + v.label; el.style.background = v.bg; el.style.color = v.fg;
+    } catch (e) { el.textContent = ''; }
+  }
+}
+async function renderGolden() {
+  const row = document.getElementById('goldenRow');
+  try {
+    const b = trip().base;
+    const wx = await fetchWx(b.lat, b.lng);
+    const sr = new Date(wx.daily.sunrise[0]), ss = new Date(wx.daily.sunset[0]);
+    const fmt = d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const gStart = new Date(ss.getTime() - 55 * 60000);
+    const v = windVerdict(wx.current.wind_speed_10m, wx.current.wind_gusts_10m);
+    row.innerHTML = `
+      <span class="chip">🌅 ${fmt(sr)}</span>
+      <span class="chip">✨ Golden hr ${fmt(gStart)}</span>
+      <span class="chip">🌇 ${fmt(ss)}</span>
+      <span class="chip" style="background:${v.bg};color:${v.fg}">🚁 ${v.word}</span>
+      <span class="chip">☁️ ${wx.current.cloud_cover}% · ${Math.round(wx.current.temperature_2m)}°</span>`;
+  } catch (e) { row.innerHTML = ''; }
+}
+async function droneCheck(pinId) {
+  const p = trip().pins.find(x => x.id === pinId); if (!p) return;
+  try {
+    const wx = await fetchWx(p.lat, p.lng);
+    const v = windVerdict(wx.current.wind_speed_10m, wx.current.wind_gusts_10m);
+    openSheet(`<h2>🚁 ${esc(p.name)}</h2>
+      <div class="card" style="margin-bottom:10px">
+        <div class="kv"><span class="k">Wind</span><span class="v" style="color:${v.fg}">${wx.current.wind_speed_10m.toFixed(0)} mph, gusting ${wx.current.wind_gusts_10m.toFixed(0)}</span></div>
+        <div class="kv"><span class="k">Verdict</span><span class="v" style="color:${v.fg};font-weight:700">${v.word}</span></div>
+        <div class="kv"><span class="k">Cloud cover</span><span class="v">${wx.current.cloud_cover}%</span></div>
+        <div class="kv"><span class="k">Temp</span><span class="v">${Math.round(wx.current.temperature_2m)}°F</span></div>
+        <div class="kv"><span class="k">Precip</span><span class="v">${wx.current.precipitation}"</span></div>
+        <div class="kv"><span class="k">Sunset</span><span class="v">${new Date(wx.daily.sunset[0]).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span></div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);text-align:center">Live from Open-Meteo · always check B4UFLY for airspace</p>`);
+  } catch (e) { toast('Weather unavailable right now'); }
+}
+
+/* ============================================================
+   EASTER EGG DEPT. 🥚
+   ============================================================ */
+function confettiBurst() {
+  const bits = ['🎉','✨','🎊','📸','🚁','🌲'];
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement('span');
+    s.className = 'confetti'; s.textContent = bits[i % bits.length];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    s.style.animationDelay = (Math.random() * .5) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 4000);
+  }
+}
+/* 🎲 the spontaneity dice — for open days when you can't decide */
+document.getElementById('diceBtn').addEventListener('click', () => {
+  const candidates = trip().pins.filter(p => !p.done);
+  if (!candidates.length) return toast('Nothing left to roll — add more spots!');
+  const p = candidates[Math.floor(Math.random() * candidates.length)];
+  const lines = ['The dice have spoken:', 'Fate says:', 'No overthinking. Today it’s:', 'Universe pick:', 'Roll result:'];
+  openSheet(`<h2>🎲 ${lines[Math.floor(Math.random() * lines.length)]}</h2>
+    <div class="card">
+      <h3>📷 ${esc(p.name)}</h3>
+      <p style="font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5">${esc(p.note || 'No notes — pure mystery. Even better.')}</p>
+      <p style="font-size:13px;margin-top:8px">${haversine(trip().base, p)} from base</p>
+    </div>
+    <button class="btn" onclick="closeSheet();flyTo('${p.id}')">Show me</button>
+    <div style="height:10px"></div>
+    <button class="btn ghost" onclick="rollAnchor('${p.id}')">Anchor it today</button>`);
+});
+function rollAnchor(pinId) {
+  const p = trip().pins.find(x => x.id === pinId); if (!p) return;
+  const today = isoDate(new Date());
+  const t = trip();
+  const days = tripDays(t);
+  const target = days.includes(today) ? today : (openDays(t)[0] || days[0]);
+  if (!target) return toast('No trip days to anchor to');
+  (t.schedule[target] = t.schedule[target] || []).push({ id: uid(), title: '🎲 ' + p.name, time: '' });
+  save(); closeSheet(); renderSchedule(); toast('Anchored. No backing out now.');
+}
+/* tap the logo 7 times… */
+document.getElementById('logoBtn').addEventListener('click', () => {
+  DB.settings.logoTaps = (DB.settings.logoTaps || 0) + 1;
+  if (DB.settings.logoTaps === 7) {
+    DB.settings.logoTaps = 0; save(); confettiBurst();
+    const t = trip();
+    const msgs = trip().pins.length;
+    openSheet(`<h2>🕵️ Mize Mode</h2>
+      <div class="card">
+        <div class="kv"><span class="k">Trips planned</span><span class="v">${DB.trips.length}</span></div>
+        <div class="kv"><span class="k">Spots pinned</span><span class="v">${DB.trips.reduce((n,t)=>n+t.pins.length,0)}</span></div>
+        <div class="kv"><span class="k">Spots shot</span><span class="v">${DB.trips.reduce((n,t)=>n+t.pins.filter(p=>p.done).length,0)}</span></div>
+        <div class="kv"><span class="k">Anchors set</span><span class="v">${DB.trips.reduce((n,t)=>n+Object.values(t.schedule).flat().length,0)}</span></div>
+      </div>
+      <p style="text-align:center;font-size:13px;color:var(--muted)">Built by Nathan Mize & Claude.<br>The best shot is the one you actually go get.</p>`);
+  }
+  save();
+});
+
+/* ---------- render root ---------- */
+function renderHome() { renderCountdown(); renderMap(); renderPinList(); renderSchedule(); renderGolden(); }
+function renderAll() {
+  const t = trip();
+  document.getElementById('tsEmoji').textContent = t.emoji;
+  document.getElementById('tsName').textContent = t.name;
+  renderDetails(); renderHome();
+  EXPLORE_STARTED = false;
+  document.getElementById('chatScroll').innerHTML = '';
+}
+
+/* ============================================================
+   EXPLORE — a trip-aware Claude, right in the app.
+   Model + prompt are easy to tweak below.
+   ============================================================ */
+const EXPLORE_MODEL = 'claude-haiku-4-5';   // cheap + fast; swap for a bigger model anytime
+let chatHistory = [];                        // [{role, content}] for the API
+let EXPLORE_STARTED = false;
+let SENDING = false;
+
+function systemPrompt() {
+  const t = trip();
+  const open = openDays(t).map(d => fmtDate(parseDate(d), { weekday: 'long', month: 'short', day: 'numeric' })).join(', ') || 'none — every day has at least one anchor';
+  const pins = t.pins.map(p => `- ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [already shot]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
+  const sched = tripDays(t).map(d => {
+    const a = (t.schedule[d] || []).map(x => (x.time ? x.time + ' ' : '') + x.title).join('; ');
+    return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}`;
+  }).join('\n');
+  return `You are Explore, the built-in travel scout inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. Be concise, useful, and a little fun. Never use markdown headers or bullets-heavy formatting; short conversational paragraphs.
+
+CURRENT TRIP: ${t.emoji} ${t.name}, ${t.start} to ${t.end}.
+HOME BASE: ${t.base.label}${t.base.address ? ' at ' + t.base.address : ''} (${t.base.lat}, ${t.base.lng}).
+OPEN DAYS (unscheduled): ${open}
+SHOOT LIST:\n${pins}
+SCHEDULE:\n${sched}
+
+He wants a loose trip — suggest, don't over-schedule. Prioritize photogenic and drone-friendly places near base, golden-hour timing, realistic drive times. Flag drone restrictions when relevant (national parks = no, MN state parks need permits).
+
+IMPORTANT — when you recommend one or more specific places worth adding to his map, ALSO append one fenced code block per place, exactly like:
+\`\`\`suggestion
+{"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","date":"2026-07-28","time":"6:00 PM"}
+\`\`\`
+lat/lng must be your best real coordinates. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.`;
+}
+
+function initExplore() {
+  if (EXPLORE_STARTED) return;
+  EXPLORE_STARTED = true;
+  chatHistory = [];
+  const scroll = document.getElementById('chatScroll');
+  scroll.innerHTML = '';
+  if (!DB.settings.apiKey) {
+    addBubble('assistant', `Hey ${DB.settings.userName} — I'm Explore, your in-app scout. I know this whole trip: dates, your base, every pin.\n\nTo wake me up, add your Anthropic API key in Settings (tap the trip name up top → Settings). It stays on this device.`);
+  } else {
+    const open = openDays(trip()).length;
+    addBubble('assistant', `Hey ${DB.settings.userName}. I've read the ${trip().name} file — ${trip().pins.filter(p=>!p.done).length} spots still to shoot and ${open} open day${open===1?'':'s'}. Ask me anything, or hit a chip below.`);
+  }
+  document.getElementById('hintRow').innerHTML = [
+    'Plan my open days', 'Hidden gems near my Airbnb', 'Best sunrise spot on my list', 'Where should I eat?', 'Rainy-day backup plan'
+  ].map(h => `<button onclick="sendChat('${h}')">${h}</button>`).join('');
+}
+
+function addBubble(role, text) {
+  const scroll = document.getElementById('chatScroll');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'assistant') {
+    div.innerHTML = `<div class="who"><span class="avatar">✦</span>Explore</div><div class="bubble"></div>`;
+    renderAssistantContent(div.querySelector('.bubble'), text);
+  } else div.textContent = text;
+  scroll.appendChild(div);
+  scroll.scrollTop = scroll.scrollHeight;
+  return div;
+}
+
+/* parse ```suggestion blocks into add-to-trip cards */
+function renderAssistantContent(el, text) {
+  const re = /```suggestion\s*([\s\S]*?)```/g;
+  let last = 0, m, html = '';
+  const frag = document.createDocumentFragment();
+  function pushText(s) { if (s.trim()) { const p = document.createElement('div'); p.textContent = s.trim(); p.style.whiteSpace = 'pre-wrap'; frag.appendChild(p); } }
+  while ((m = re.exec(text))) {
+    pushText(text.slice(last, m.index));
+    try {
+      const s = JSON.parse(m[1]);
+      const card = document.createElement('div');
+      card.className = 'sugg-card';
+      card.innerHTML = `<div class="sn">📍 ${esc(s.name)}</div>
+        <div class="sd">${esc(s.note || '')}${s.date ? `<br>Suggested: ${esc(s.date)}${s.time ? ' · ' + esc(s.time) : ''}` : ''}</div>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn small'; btn.textContent = '+ Add to trip';
+      btn.onclick = () => {
+        trip().pins.push({ id: uid(), name: s.name, lat: +s.lat, lng: +s.lng, note: s.note || '', type: 'shoot', done: false });
+        if (s.date && tripDays(trip()).includes(s.date)) {
+          (trip().schedule[s.date] = trip().schedule[s.date] || []).push({ id: uid(), title: s.name, time: s.time || '' });
+        }
+        save(); renderHome();
+        btn.replaceWith(Object.assign(document.createElement('div'), { className: 'added', textContent: '✓ On the map' }));
+        toast('Added to Home 📍');
+      };
+      card.appendChild(btn);
+      frag.appendChild(card);
+    } catch (e) { pushText(m[0]); }
+    last = m.index + m[0].length;
+  }
+  pushText(text.slice(last));
+  el.innerHTML = ''; el.appendChild(frag);
+}
+
+async function sendChat(preset) {
+  if (SENDING) return;
+  const input = document.getElementById('chatInput');
+  const text = (preset || input.value).trim();
+  if (!text) return;
+  if (!DB.settings.apiKey) { addBubble('user', text); addBubble('assistant', 'Add your API key in Settings first — then I\'m all yours.'); input.value = ''; return; }
+  input.value = ''; input.style.height = 'auto';
+  addBubble('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  const scroll = document.getElementById('chatScroll');
+  const thinking = document.createElement('div');
+  thinking.className = 'msg assistant';
+  thinking.innerHTML = `<div class="who"><span class="avatar">✦</span>Explore</div><div class="typing"><i></i><i></i><i></i></div>`;
+  scroll.appendChild(thinking); scroll.scrollTop = scroll.scrollHeight;
+
+  SENDING = true; document.getElementById('sendBtn').disabled = true;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': DB.settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: EXPLORE_MODEL,
+        max_tokens: 1200,
+        system: systemPrompt(),
+        messages: chatHistory.slice(-16)   // keep context light = cheap
+      })
+    });
+    const data = await res.json();
+    thinking.remove();
+    if (data.error) {
+      addBubble('assistant', 'API hiccup: ' + (data.error.message || 'unknown error') + (res.status === 401 ? '\n\nDouble-check your key in Settings.' : ''));
+    } else {
+      const reply = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+      chatHistory.push({ role: 'assistant', content: reply });
+      addBubble('assistant', reply);
+    }
+  } catch (e) {
+    thinking.remove();
+    addBubble('assistant', 'Couldn\'t reach the API — check your connection and try again.');
+  }
+  SENDING = false; document.getElementById('sendBtn').disabled = false;
+}
+document.getElementById('sendBtn').addEventListener('click', () => sendChat());
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+document.getElementById('chatInput').addEventListener('input', function () {
+  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+});
+
+/* ---------- boot ---------- */
+renderAll();
+switchTab('home');
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
