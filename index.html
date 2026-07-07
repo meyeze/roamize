@@ -132,9 +132,21 @@ nav button svg{width:23px;height:23px}
 #countdown .sub{font-size:13px;opacity:.85;margin-top:2px;font-weight:500}
 #goldenRow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
 #goldenRow::-webkit-scrollbar{display:none}
+#mapWrap{position:relative}
 #map{
   height:44vh;min-height:300px;border-radius:var(--radius);
   border:1px solid var(--border);z-index:1;
+}
+.map-toggle{
+  position:absolute;top:10px;right:10px;z-index:600;
+  background:rgba(19,24,38,.92);border:1px solid var(--border);border-radius:10px;
+  padding:7px 11px;font-size:12.5px;font-weight:700;color:var(--text);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.photo-grid img{
+  width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface-2);
 }
 .leaflet-container{background:#0b0e14;font-family:var(--font)}
 .pin-dot{
@@ -148,7 +160,7 @@ nav button svg{width:23px;height:23px}
 .leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border-radius:12px;border:1px solid var(--border)}
 .leaflet-popup-tip{background:var(--surface)}
 .leaflet-popup-content{margin:12px 14px;font-size:14px;line-height:1.45}
-.popup-actions{display:flex;gap:8px;margin-top:8px}
+.popup-actions{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
 .popup-actions button{font-size:12px;font-weight:700;color:var(--accent-light);padding:4px 0}
 
 .pin-item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--border)}
@@ -286,7 +298,10 @@ nav button svg{width:23px;height:23px}
   <section class="tab active" id="tab-home">
     <div id="countdown"></div>
     <div id="goldenRow"></div>
-    <div id="map"></div>
+    <div id="mapWrap">
+      <div id="map"></div>
+      <button id="mapStyleBtn" class="map-toggle"></button>
+    </div>
     <div class="section-label">Shoot list <button id="addPinBtn">+ Add spot</button></div>
     <div class="card" id="pinList"></div>
     <div class="section-label">The loose plan</div>
@@ -643,7 +658,30 @@ function removeLogistics(id) {
 /* ============================================================
    HOME TAB — countdown, map, pins, schedule
    ============================================================ */
-let MAP = null, MARKERS = [];
+let MAP = null, MARKERS = [], STYLE_LAYERS = [];
+
+/* ---------- map styles: hybrid (satellite + labels) & dark ---------- */
+const MAP_STYLES = {
+  hybrid: () => [
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+  ],
+  dark: () => [
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 })
+  ]
+};
+function mapStyle() { return DB.settings.mapStyle || 'hybrid'; }
+function applyMapStyle() {
+  STYLE_LAYERS.forEach(l => MAP.removeLayer(l));
+  STYLE_LAYERS = MAP_STYLES[mapStyle()]().map(l => l.addTo(MAP));
+  const btn = document.getElementById('mapStyleBtn');
+  btn.textContent = mapStyle() === 'hybrid' ? '🌑 Dark' : '🛰️ Hybrid';
+}
+document.getElementById('mapStyleBtn').addEventListener('click', () => {
+  DB.settings.mapStyle = mapStyle() === 'hybrid' ? 'dark' : 'hybrid';
+  save(); applyMapStyle();
+});
 
 function renderCountdown() {
   const t = trip();
@@ -671,8 +709,8 @@ function renderMap() {
   const t = trip();
   if (!MAP) {
     MAP = L.map('map', { zoomControl: false, attributionControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(MAP);
-    L.control.attribution({ prefix: '© OSM · CARTO' }).addTo(MAP);
+    applyMapStyle();
+    L.control.attribution({ prefix: '© Esri · OSM · CARTO' }).addTo(MAP);
     MAP.on('contextmenu', e => quickAddPin(e.latlng)); // long-press on mobile
   }
   MARKERS.forEach(m => MAP.removeLayer(m)); MARKERS = [];
@@ -693,10 +731,45 @@ function popupHtml(p) {
     <span style="color:#8b95ab;font-size:12.5px">${esc(p.note || '')}${p.note ? '<br>' : ''}${dist} from base</span>
     <div class="popup-actions">
       <button onclick="togglePin('${p.id}')">${p.done ? '↺ Unshoot' : '✓ Shot it'}</button>
-      <button onclick="droneCheck('${p.id}')">🚁 Conditions</button>
+      <button onclick="peekPhotos('${p.id}')">📸 Peek</button>
+      <button onclick="droneCheck('${p.id}')">🚁 Wind</button>
       <button onclick="navTo(${p.lat},${p.lng})">🧭 Go</button>
       <button onclick="removePin('${p.id}')" style="color:var(--bad)">✕</button>
     </div>`;
+}
+
+/* ---------- 📸 Peek: real photos near a pin (Wikimedia Commons, free) ---------- */
+const photoCache = {};
+async function peekPhotos(pinId) {
+  const p = trip().pins.find(x => x.id === pinId); if (!p) return;
+  const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
+  openSheet(`<h2>📸 ${esc(p.name)}</h2>
+    <div class="photo-grid" id="peekGrid"><div class="empty" style="grid-column:1/-1">Finding real shots of this spot…</div></div>
+    <button class="btn ghost" onclick="window.open('${svUrl}','_blank')">👁 Open Street View</button>
+    <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:10px">Photos: Wikimedia Commons, shot near these coordinates · tap to view full-size</p>`);
+  const key = pinId;
+  try {
+    let photos = photoCache[key];
+    if (!photos) {
+      const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*' +
+        '&generator=geosearch&ggsnamespace=6&ggslimit=10&ggsradius=2500' +
+        `&ggscoord=${p.lat}%7C${p.lng}` +
+        '&prop=imageinfo&iiprop=url&iiurlwidth=640';
+      const res = await fetch(url); const data = await res.json();
+      photos = Object.values(data.query?.pages || {})
+        .map(pg => pg.imageinfo && pg.imageinfo[0])
+        .filter(ii => ii && /\.(jpe?g|png)$/i.test(ii.url))
+        .slice(0, 4);
+      photoCache[key] = photos;
+    }
+    const grid = document.getElementById('peekGrid'); if (!grid) return;
+    grid.innerHTML = photos.length
+      ? photos.map(ii => `<img src="${ii.thumburl}" loading="lazy" onclick="window.open('${ii.url}','_blank')">`).join('')
+      : `<div class="empty" style="grid-column:1/-1">No public photos within ~1.5 mi of this pin.<br>Street View is your friend here 👁</div>`;
+  } catch (e) {
+    const grid = document.getElementById('peekGrid');
+    if (grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Couldn\'t load photos right now.</div>';
+  }
 }
 function navTo(lat, lng) { window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, '_blank'); }
 function haversine(a, b) {

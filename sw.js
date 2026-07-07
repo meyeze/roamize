@@ -1,5 +1,5 @@
 // Roamize service worker — caches the app shell so it opens fast (and mostly offline).
-const CACHE = 'roamize-v1';
+const CACHE = 'roamize-v2';
 const SHELL = [
   './index.html',
   './manifest.json',
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('api.anthropic.com') || url.hostname.includes('open-meteo.com')) return;
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      if (e.request.method === 'GET' && (url.origin === location.origin || url.hostname.includes('basemaps.cartocdn.com'))) {
+      if (e.request.method === 'GET' && (url.origin === location.origin || url.hostname.includes('basemaps.cartocdn.com') || url.hostname.includes('arcgisonline.com'))) {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
       }
