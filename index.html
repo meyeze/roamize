@@ -327,6 +327,7 @@ nav button svg{width:23px;height:23px}
   <section class="tab" id="tab-explore">
     <div id="chatBar">
       <button id="chatListBtn">☰ Chats</button>
+      <button id="memoryBtn">🧠 Memory</button>
       <button id="newChatBtn">＋ New chat</button>
     </div>
     <div id="chatScroll"></div>
@@ -515,6 +516,8 @@ function settingsForm() {
   openSheet(`<h2>Settings</h2>
     <div class="field"><label>Anthropic API key (stays on this device)</label>
       <input id="setKey" type="password" placeholder="sk-ant-…" value="${esc(DB.settings.apiKey)}"></div>
+    <div class="field"><label>Scout's personality (blank = default)</label>
+      <textarea id="setPersona" rows="6" placeholder="${esc(DEFAULT_PERSONA)}">${esc(DB.settings.persona || '')}</textarea></div>
     <button class="btn" onclick="saveSettings()">Save</button>
     <div style="height:14px"></div>
     <button class="btn ghost" onclick="exportData()">Export trip data (JSON)</button>
@@ -527,6 +530,7 @@ function settingsForm() {
 }
 function saveSettings() {
   DB.settings.apiKey = document.getElementById('setKey').value.trim();
+  DB.settings.persona = document.getElementById('setPersona').value.trim();
   save(); closeSheet(); toast('Saved');
 }
 function exportData() {
@@ -1034,6 +1038,17 @@ function renderAll() {
    Model + prompt are easy to tweak below.
    ============================================================ */
 const EXPLORE_MODEL = 'claude-haiku-4-5';   // cheap + fast; swap for a bigger model anytime
+
+/* ============================================================
+   SCOUT'S PERSONALITY — edit this freely, or override it
+   in-app via Settings without touching code.
+   ============================================================ */
+const DEFAULT_PERSONA = `Name: Scout
+Vibe: sharp, dry-witted field producer who's scouted a hundred shoots
+Style: talks like a trusted crew member, not a concierge — direct, a little playful, never corporate
+Loves: golden light, empty parking lots at 5 AM, a clean flight plan
+Hates: tourist-trap detours, wasted daylight, over-scheduling
+Quirk: occasionally drops a filmmaking phrase ("we lose the light at 8:57")`;
 let CURRENT_CHAT = null;                     // {id, title, at, messages:[{role,content}]}
 let EXPLORE_STARTED = false;
 let SENDING = false;
@@ -1048,21 +1063,28 @@ function persistChat() {
   save();
 }
 
+function memory() { const t = trip(); return t.memory = t.memory || []; }
+
 function systemPrompt() {
   const t = trip();
+  const mem = memory().map(m => '- ' + m).join('\n') || '(nothing yet)';
   const open = openDays(t).map(d => fmtDate(parseDate(d), { weekday: 'long', month: 'short', day: 'numeric' })).join(', ') || 'none — every day has at least one anchor';
   const pins = t.pins.map(p => `- ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [already shot]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
   const sched = tripDays(t).map(d => {
     const a = (t.schedule[d] || []).map(x => (x.time ? x.time + ' ' : '') + x.title).join('; ');
     return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}`;
   }).join('\n');
-  return `You are Explore, the built-in travel scout inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. Be concise, useful, and a little fun. Never use markdown headers or bullets-heavy formatting; short conversational paragraphs.
+  return `You are Scout, the built-in travel scout inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. Be concise and useful; short conversational paragraphs.
+
+YOUR PERSONALITY:
+${DB.settings.persona || DEFAULT_PERSONA}
 
 CURRENT TRIP: ${t.emoji} ${t.name}, ${t.start} to ${t.end}.
 HOME BASE: ${t.base.label}${t.base.address ? ' at ' + t.base.address : ''} (${t.base.lat}, ${t.base.lng}).
 OPEN DAYS (unscheduled): ${open}
 SHOOT LIST:\n${pins}
 SCHEDULE:\n${sched}
+MEMORY (things Nathan told you to remember — from past chats too):\n${mem}
 
 He wants a loose trip — suggest, don't over-schedule. Prioritize photogenic and drone-friendly places near base, golden-hour timing, realistic drive times. Flag drone restrictions when relevant (national parks = no, MN state parks need permits).
 
@@ -1072,7 +1094,13 @@ IMPORTANT — when you recommend one or more specific places worth adding to his
 \`\`\`suggestion
 {"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","date":"2026-07-28","time":"6:00 PM"}
 \`\`\`
-lat/lng must be your best real coordinates. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.`;
+lat/lng must be your best real coordinates. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.
+
+MEMORY WRITES — you CAN remember things across chats. When Nathan shares a lasting preference, fact, or decision worth keeping (e.g. "I hate crowds before 9 AM", "sunset over sunrise", "bringing the ND filters"), append a fenced block:
+\`\`\`memory
+{"note":"short single fact, max ~15 words"}
+\`\`\`
+The app saves it permanently and it will appear in your MEMORY section in every future chat. Use it sparingly — durable facts only, not small talk. If he explicitly says to remember something, always write it. Don't mention the block in prose; the app shows a confirmation.`;
 }
 
 function initExplore() {
@@ -1087,10 +1115,10 @@ function initExplore() {
 }
 function greeting() {
   if (!DB.settings.apiKey) {
-    addBubble('assistant', `Hey ${DB.settings.userName} — I'm Explore, your in-app scout. I know this whole trip: dates, your base, every pin.\n\nTo wake me up, add your Anthropic API key in Settings (tap the trip name up top → Settings). It stays on this device.`);
+    addBubble('assistant', `Hey ${DB.settings.userName} — Scout here, your in-app fixer. I know this whole trip: dates, your base, every pin.\n\nTo wake me up, add your Anthropic API key in Settings (tap the trip name up top → Settings). It stays on this device.`);
   } else {
     const open = openDays(trip()).length;
-    addBubble('assistant', `Hey ${DB.settings.userName}. I've read the ${trip().name} file — ${trip().pins.filter(p=>!p.done).length} spots still to shoot and ${open} open day${open===1?'':'s'}. Ask me anything, or hit a chip below.`);
+    addBubble('assistant', `Scout here. I've read the ${trip().name} file — ${trip().pins.filter(p=>!p.done).length} spots still to shoot and ${open} open day${open===1?'':'s'}. Ask me anything, or hit a chip below.`);
   }
 }
 function newChat() {
@@ -1132,12 +1160,34 @@ function deleteChat(id) {
 document.getElementById('chatListBtn').addEventListener('click', chatsSheet);
 document.getElementById('newChatBtn').addEventListener('click', () => { newChat(); toast('Fresh chat'); });
 
+/* 🧠 memory — durable notes Explore carries into every chat */
+function memorySheet() {
+  const rows = memory().length ? memory().map((n, i) => `
+    <div class="chat-row">
+      <div class="ct"><div class="t1" style="white-space:normal">${esc(n)}</div></div>
+      <button class="del" onclick="forgetMemory(${i})">✕</button>
+    </div>`).join('')
+    : '<div class="empty">Nothing remembered yet.<br>Tell Explore "remember that…" mid-chat, or add a note below.</div>';
+  openSheet(`<h2>🧠 Scout memory · ${esc(trip().name)}</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">Explore reads these at the start of every chat.</p>
+    ${rows}
+    <div style="height:14px"></div>
+    <div class="field"><input id="memInput" placeholder="Add a note yourself…"></div>
+    <button class="btn" onclick="addMemory()">Save note</button>`);
+}
+function addMemory() {
+  const v = document.getElementById('memInput').value.trim(); if (!v) return;
+  memory().push(v); save(); memorySheet(); toast('Remembered 🧠');
+}
+function forgetMemory(i) { memory().splice(i, 1); save(); memorySheet(); }
+document.getElementById('memoryBtn').addEventListener('click', memorySheet);
+
 function addBubble(role, text) {
   const scroll = document.getElementById('chatScroll');
   const div = document.createElement('div');
   div.className = 'msg ' + role;
   if (role === 'assistant') {
-    div.innerHTML = `<div class="who"><span class="avatar">✦</span>Explore</div><div class="bubble"></div>`;
+    div.innerHTML = `<div class="who"><span class="avatar">✦</span>Scout</div><div class="bubble"></div>`;
     renderAssistantContent(div.querySelector('.bubble'), text);
   } else div.textContent = text;
   scroll.appendChild(div);
@@ -1155,16 +1205,29 @@ function mdLite(s) {
   return h;
 }
 
-/* parse ```suggestion blocks into add-to-trip cards */
+/* parse ```suggestion and ```memory blocks into cards */
 function renderAssistantContent(el, text) {
-  const re = /```suggestion\s*([\s\S]*?)```/g;
+  const re = /```(suggestion|memory)\s*([\s\S]*?)```/g;
   let last = 0, m;
   const frag = document.createDocumentFragment();
   function pushText(s) { if (s.trim()) { const p = document.createElement('div'); p.innerHTML = mdLite(s.trim()); p.style.whiteSpace = 'pre-wrap'; frag.appendChild(p); } }
   while ((m = re.exec(text))) {
     pushText(text.slice(last, m.index));
+    if (m[1] === 'memory') {
+      try {
+        const note = JSON.parse(m[2]).note;
+        if (note && !memory().includes(note)) { memory().push(note); save(); }
+        const chipEl = document.createElement('div');
+        chipEl.className = 'sugg-card';
+        chipEl.style.borderColor = 'var(--border)';
+        chipEl.innerHTML = `<div class="added">🧠 Remembered: <span style="color:var(--text);font-weight:500">${esc(note)}</span></div>`;
+        frag.appendChild(chipEl);
+      } catch (e) {}
+      last = m.index + m[0].length;
+      continue;
+    }
     try {
-      const s = JSON.parse(m[1]);
+      const s = JSON.parse(m[2]);
       const card = document.createElement('div');
       card.className = 'sugg-card';
       card.innerHTML = `<div class="sn">📍 ${esc(s.name)}</div>
@@ -1205,7 +1268,7 @@ async function sendChat(preset) {
   const scroll = document.getElementById('chatScroll');
   const thinking = document.createElement('div');
   thinking.className = 'msg assistant';
-  thinking.innerHTML = `<div class="who"><span class="avatar">✦</span>Explore</div><div class="typing"><i></i><i></i><i></i></div>`;
+  thinking.innerHTML = `<div class="who"><span class="avatar">✦</span>Scout</div><div class="typing"><i></i><i></i><i></i></div>`;
   scroll.appendChild(thinking); scroll.scrollTop = scroll.scrollHeight;
 
   SENDING = true; document.getElementById('sendBtn').disabled = true;
