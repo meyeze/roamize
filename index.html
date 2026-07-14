@@ -1255,13 +1255,19 @@ if (window.visualViewport) {
   const vvFix = () => {
     clearTimeout(vvTimer);
     vvTimer = setTimeout(() => {
+      // ONLY intervene while typing in the Explore chat — everywhere else
+      // (Settings sheet, pin forms, etc.) let iOS handle the keyboard natively.
+      const chatFocused = document.activeElement === document.getElementById('chatInput')
+        && document.getElementById('tab-explore').classList.contains('active');
       const vv = window.visualViewport;
       const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      document.documentElement.style.setProperty('--kb', kb + 'px');
-      if (kb > 0) {
+      if (chatFocused && kb > 0) {
+        document.documentElement.style.setProperty('--kb', kb + 'px');
         window.scrollTo(0, 0);   // stop Safari from panning the whole app
         const sc = document.getElementById('chatScroll');
         sc.scrollTop = sc.scrollHeight;
+      } else {
+        document.documentElement.style.setProperty('--kb', '0px');
       }
     }, 60);
   };
