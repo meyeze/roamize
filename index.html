@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
 <title>Roamize</title>
 <meta name="description" content="Roamize — Nathan's personal trip HQ">
 <link rel="manifest" href="manifest.json">
@@ -108,7 +108,8 @@ nav button svg{width:23px;height:23px}
 .kv .v{text-align:right;word-break:break-word;font-weight:500}
 .chip{
   display:inline-flex;align-items:center;gap:5px;background:var(--accent-dim);
-  color:var(--accent-light);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;
+  color:var(--accent-light);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;
+  white-space:nowrap;flex:none;
 }
 .empty{color:var(--muted);font-size:14px;text-align:center;padding:26px 10px;line-height:1.5}
 .btn{
@@ -187,7 +188,21 @@ nav button svg{width:23px;height:23px}
 
 /* ---------- explore chat ---------- */
 #tab-explore{display:none;padding:0}
-#tab-explore.active{display:flex;flex-direction:column;height:calc(100dvh - 62px - 78px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+#tab-explore.active{display:flex;flex-direction:column;height:calc(100dvh - 62px - 78px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--kb,0px))}
+#chatBar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;border-bottom:1px solid var(--border);
+}
+#chatBar button{color:var(--accent-light);font-size:13px;font-weight:700;padding:4px 0}
+.msg strong{font-weight:700}
+.msg em{font-style:italic}
+.msg code{background:var(--surface-2);border-radius:5px;padding:1px 5px;font-size:13px}
+.chat-row{display:flex;align-items:center;gap:10px;padding:12px 6px;border-bottom:1px solid var(--border)}
+.chat-row:last-child{border-bottom:none}
+.chat-row .ct{flex:1;min-width:0;cursor:pointer}
+.chat-row .ct .t1{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-row .ct .t2{font-size:12px;color:var(--muted);margin-top:2px}
+.chat-row .del{color:var(--muted);font-size:15px;padding:6px}
 #chatScroll{flex:1;overflow-y:auto;padding:16px 16px 8px;-webkit-overflow-scrolling:touch}
 .msg{max-width:86%;margin-bottom:14px;line-height:1.5;font-size:15px;white-space:pre-wrap;word-break:break-word}
 .msg.user{
@@ -310,6 +325,10 @@ nav button svg{width:23px;height:23px}
 
   <!-- EXPLORE -->
   <section class="tab" id="tab-explore">
+    <div id="chatBar">
+      <button id="chatListBtn">☰ Chats</button>
+      <button id="newChatBtn">＋ New chat</button>
+    </div>
     <div id="chatScroll"></div>
     <div class="explore-hint" id="hintRow"></div>
     <div id="composer">
@@ -1015,9 +1034,19 @@ function renderAll() {
    Model + prompt are easy to tweak below.
    ============================================================ */
 const EXPLORE_MODEL = 'claude-haiku-4-5';   // cheap + fast; swap for a bigger model anytime
-let chatHistory = [];                        // [{role, content}] for the API
+let CURRENT_CHAT = null;                     // {id, title, at, messages:[{role,content}]}
 let EXPLORE_STARTED = false;
 let SENDING = false;
+
+/* chats are saved per-trip, so history survives app switches & restarts */
+function chats() { const t = trip(); return t.chats = t.chats || []; }
+function persistChat() {
+  if (!CURRENT_CHAT || !CURRENT_CHAT.messages.length) return;
+  const list = chats();
+  if (!list.some(c => c.id === CURRENT_CHAT.id)) list.unshift(CURRENT_CHAT);
+  CURRENT_CHAT.at = Date.now();
+  save();
+}
 
 function systemPrompt() {
   const t = trip();
@@ -1037,6 +1066,8 @@ SCHEDULE:\n${sched}
 
 He wants a loose trip — suggest, don't over-schedule. Prioritize photogenic and drone-friendly places near base, golden-hour timing, realistic drive times. Flag drone restrictions when relevant (national parks = no, MN state parks need permits).
 
+FORMATTING: plain conversational text only. Never use markdown — no asterisks for bold/italic, no headers, no bullet symbols. This renders in a chat bubble, not a document.
+
 IMPORTANT — when you recommend one or more specific places worth adding to his map, ALSO append one fenced code block per place, exactly like:
 \`\`\`suggestion
 {"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","date":"2026-07-28","time":"6:00 PM"}
@@ -1047,19 +1078,59 @@ lat/lng must be your best real coordinates. "date" (a trip date, prefer OPEN day
 function initExplore() {
   if (EXPLORE_STARTED) return;
   EXPLORE_STARTED = true;
-  chatHistory = [];
-  const scroll = document.getElementById('chatScroll');
-  scroll.innerHTML = '';
+  const list = chats();
+  if (list.length) loadChat(list[0].id);      // resume where you left off
+  else newChat();
+  document.getElementById('hintRow').innerHTML = [
+    'Plan my open days', 'Hidden gems near my Airbnb', 'Best sunrise spot on my list', 'Where should I eat?', 'Rainy-day backup plan'
+  ].map(h => `<button onclick="sendChat('${h}')">${h}</button>`).join('');
+}
+function greeting() {
   if (!DB.settings.apiKey) {
     addBubble('assistant', `Hey ${DB.settings.userName} — I'm Explore, your in-app scout. I know this whole trip: dates, your base, every pin.\n\nTo wake me up, add your Anthropic API key in Settings (tap the trip name up top → Settings). It stays on this device.`);
   } else {
     const open = openDays(trip()).length;
     addBubble('assistant', `Hey ${DB.settings.userName}. I've read the ${trip().name} file — ${trip().pins.filter(p=>!p.done).length} spots still to shoot and ${open} open day${open===1?'':'s'}. Ask me anything, or hit a chip below.`);
   }
-  document.getElementById('hintRow').innerHTML = [
-    'Plan my open days', 'Hidden gems near my Airbnb', 'Best sunrise spot on my list', 'Where should I eat?', 'Rainy-day backup plan'
-  ].map(h => `<button onclick="sendChat('${h}')">${h}</button>`).join('');
 }
+function newChat() {
+  CURRENT_CHAT = { id: uid(), title: '', at: Date.now(), messages: [] };
+  document.getElementById('chatScroll').innerHTML = '';
+  greeting();
+}
+function loadChat(id) {
+  const c = chats().find(x => x.id === id); if (!c) return newChat();
+  CURRENT_CHAT = c;
+  const scroll = document.getElementById('chatScroll');
+  scroll.innerHTML = '';
+  greeting();
+  c.messages.forEach(m => addBubble(m.role, m.content));
+  closeSheet();
+}
+function chatsSheet() {
+  const list = chats();
+  const rows = list.length ? list.map(c => `
+    <div class="chat-row">
+      <div class="ct" onclick="loadChat('${c.id}')">
+        <div class="t1">${esc(c.title || 'Untitled chat')}</div>
+        <div class="t2">${new Date(c.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${c.messages.length} messages${c.id === CURRENT_CHAT?.id ? ' · current' : ''}</div>
+      </div>
+      <button class="del" onclick="deleteChat('${c.id}')">✕</button>
+    </div>`).join('')
+    : '<div class="empty">No saved chats yet for this trip.</div>';
+  openSheet(`<h2>Chats · ${esc(trip().name)}</h2>${rows}
+    <div style="height:14px"></div>
+    <button class="btn" onclick="newChat();closeSheet()">＋ New chat</button>`);
+}
+function deleteChat(id) {
+  const t = trip();
+  t.chats = (t.chats || []).filter(c => c.id !== id);
+  save();
+  if (CURRENT_CHAT?.id === id) newChat();
+  chatsSheet();
+}
+document.getElementById('chatListBtn').addEventListener('click', chatsSheet);
+document.getElementById('newChatBtn').addEventListener('click', () => { newChat(); toast('Fresh chat'); });
 
 function addBubble(role, text) {
   const scroll = document.getElementById('chatScroll');
@@ -1074,12 +1145,22 @@ function addBubble(role, text) {
   return div;
 }
 
+/* light markdown: renders **bold**, *italic*, `code` properly instead of raw asterisks */
+function mdLite(s) {
+  let h = esc(s);
+  h = h.replace(/^#{1,4}\s+(.+)$/gm, '<strong>$1</strong>');
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  return h;
+}
+
 /* parse ```suggestion blocks into add-to-trip cards */
 function renderAssistantContent(el, text) {
   const re = /```suggestion\s*([\s\S]*?)```/g;
-  let last = 0, m, html = '';
+  let last = 0, m;
   const frag = document.createDocumentFragment();
-  function pushText(s) { if (s.trim()) { const p = document.createElement('div'); p.textContent = s.trim(); p.style.whiteSpace = 'pre-wrap'; frag.appendChild(p); } }
+  function pushText(s) { if (s.trim()) { const p = document.createElement('div'); p.innerHTML = mdLite(s.trim()); p.style.whiteSpace = 'pre-wrap'; frag.appendChild(p); } }
   while ((m = re.exec(text))) {
     pushText(text.slice(last, m.index));
     try {
@@ -1116,7 +1197,10 @@ async function sendChat(preset) {
   if (!DB.settings.apiKey) { addBubble('user', text); addBubble('assistant', 'Add your API key in Settings first — then I\'m all yours.'); input.value = ''; return; }
   input.value = ''; input.style.height = 'auto';
   addBubble('user', text);
-  chatHistory.push({ role: 'user', content: text });
+  if (!CURRENT_CHAT) newChat();
+  CURRENT_CHAT.messages.push({ role: 'user', content: text });
+  if (!CURRENT_CHAT.title) CURRENT_CHAT.title = text.slice(0, 48);
+  persistChat();
 
   const scroll = document.getElementById('chatScroll');
   const thinking = document.createElement('div');
@@ -1138,7 +1222,7 @@ async function sendChat(preset) {
         model: EXPLORE_MODEL,
         max_tokens: 1200,
         system: systemPrompt(),
-        messages: chatHistory.slice(-16)   // keep context light = cheap
+        messages: CURRENT_CHAT.messages.slice(-16)   // keep context light = cheap
       })
     });
     const data = await res.json();
@@ -1147,7 +1231,8 @@ async function sendChat(preset) {
       addBubble('assistant', 'API hiccup: ' + (data.error.message || 'unknown error') + (res.status === 401 ? '\n\nDouble-check your key in Settings.' : ''));
     } else {
       const reply = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-      chatHistory.push({ role: 'assistant', content: reply });
+      CURRENT_CHAT.messages.push({ role: 'assistant', content: reply });
+      persistChat();
       addBubble('assistant', reply);
     }
   } catch (e) {
@@ -1163,6 +1248,28 @@ document.getElementById('chatInput').addEventListener('keydown', e => {
 document.getElementById('chatInput').addEventListener('input', function () {
   this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px';
 });
+
+/* ---------- keep composer above the iOS keyboard ---------- */
+if (window.visualViewport) {
+  let vvTimer;
+  const vvFix = () => {
+    clearTimeout(vvTimer);
+    vvTimer = setTimeout(() => {
+      const vv = window.visualViewport;
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb', kb + 'px');
+      if (kb > 0) {
+        window.scrollTo(0, 0);   // stop Safari from panning the whole app
+        const sc = document.getElementById('chatScroll');
+        sc.scrollTop = sc.scrollHeight;
+      }
+    }, 60);
+  };
+  window.visualViewport.addEventListener('resize', vvFix);
+  window.visualViewport.addEventListener('scroll', vvFix);
+  document.getElementById('chatInput').addEventListener('blur', () =>
+    setTimeout(() => document.documentElement.style.setProperty('--kb', '0px'), 120));
+}
 
 /* ---------- boot ---------- */
 renderAll();

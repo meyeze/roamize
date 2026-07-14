@@ -1,5 +1,5 @@
 // Roamize service worker — caches the app shell so it opens fast (and mostly offline).
-const CACHE = 'roamize-v2';
+const CACHE = 'roamize-v3';
 const SHELL = [
   './index.html',
   './manifest.json',
