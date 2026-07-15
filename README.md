@@ -21,6 +21,20 @@ Nathan's personal trip HQ. Logistics, shoot spots on a map, a loose schedule, an
 - Tap the trip name (top right) → **Settings** → paste your Anthropic API key. It's stored only in your browser — never uploaded anywhere except directly to Anthropic when you chat.
 - Details tab → fill in your flight / rental car / Airbnb, and set your **Home base** coordinates (long-press your Airbnb in Apple Maps → copy coordinates). The map re-centers around it.
 
+## Desktop
+
+Same URL, same app — open `https://YOUR-USERNAME.github.io/roamize/` in any desktop browser. At ≥900px wide it switches to a desktop layout: side navigation rail, big sticky map with lists beside it, centered Claude-style Explore column.
+
+## Sync between devices
+
+Roamize syncs through a **private GitHub Gist** on your account — free, no backend.
+
+1. github.com → Settings → Developer settings → Personal access tokens → **Generate new token (classic)** → check only the **gist** scope → generate.
+2. In Roamize Settings (on EVERY device you want synced), paste the token → Save.
+3. Tap the **↻ sync button** in the header. First sync creates the private gist; after that, whichever copy is newer wins (it asks before overwriting local data).
+
+Notes: your Anthropic API key and GitHub token are stripped before upload — they never leave the device. Sync is manual by design: hit ↻ after making changes on one device, then ↻ on the other.
+
 ## Updating the app later
 
 Edit files → drag the new version onto the repo (GitHub replaces them) → commit. The service worker caches aggressively, so after deploying an update, bump `roamize-v1` to `roamize-v2` in `sw.js` (or hard-refresh).

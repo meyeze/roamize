@@ -283,6 +283,68 @@ nav button svg{width:23px;height:23px}
 .confetti{position:fixed;top:-12px;z-index:1300;font-size:18px;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 
+/* sync spinner */
+#syncBtn.spin svg{animation:spinsync 1s linear infinite}
+@keyframes spinsync{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   DESKTOP — same app, roomier bones (≥900px)
+   ============================================================ */
+@media (min-width: 900px){
+  nav{
+    top:calc(env(safe-area-inset-top) + 58px);bottom:0;left:0;right:auto;width:96px;
+    flex-direction:column;justify-content:flex-start;gap:10px;
+    padding:22px 12px;border-top:none;border-right:1px solid var(--border);
+  }
+  nav button{flex:none;padding:12px 0;border-radius:14px}
+  nav button:hover{color:var(--accent-light);background:var(--surface)}
+  main{margin-left:96px}
+  .tab{max-width:1180px;margin:0 auto;padding:22px 32px}
+  .btn:hover,.trip-switch:hover{filter:brightness(1.12);cursor:pointer}
+  .explore-hint button:hover{border-color:var(--accent);cursor:pointer}
+
+  /* Home: map anchored left, lists right */
+  #tab-home.active{
+    display:grid;column-gap:26px;
+    grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
+    grid-template-rows:auto auto auto auto auto 1fr;
+    grid-template-areas:
+      "countdown countdown"
+      "golden golden"
+      "map shootlabel"
+      "map pinlist"
+      "map planlabel"
+      "map schedule";
+    align-items:start;
+  }
+  #countdown{grid-area:countdown}
+  #goldenRow{grid-area:golden}
+  #mapWrap{grid-area:map;position:sticky;top:calc(env(safe-area-inset-top) + 80px)}
+  #map{height:calc(100dvh - 300px);min-height:520px}
+  #shootLabel{grid-area:shootlabel;margin-top:0}
+  #pinList{grid-area:pinlist}
+  #planLabel{grid-area:planlabel}
+  #schedule{grid-area:schedule}
+
+  /* Explore: centered column, Claude-style */
+  #tab-explore.active{
+    max-width:820px;margin:0 auto;
+    height:calc(100dvh - 62px - env(safe-area-inset-top));
+    border-left:1px solid var(--border);border-right:1px solid var(--border);
+  }
+
+  /* Details: two columns of cards */
+  #tab-details{column-count:2;column-gap:26px}
+  #tab-details .card,#tab-details .section-label{break-inside:avoid}
+
+  /* sheets become centered modals */
+  #overlay{align-items:center;padding:26px}
+  #sheet{border-radius:22px;max-height:82dvh}
+  #sheet .grab{display:none}
+
+  #diceBtn{bottom:26px}
+}
+
 /* dice fab */
 #diceBtn{
   position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:800;
@@ -298,11 +360,16 @@ nav button svg{width:23px;height:23px}
 
 <header>
   <div class="logo" id="logoBtn"><div class="mark">R</div>Roamize</div>
-  <button class="trip-switch" id="tripSwitchBtn">
-    <span class="emoji" id="tsEmoji">🌲</span>
-    <span class="name" id="tsName">Trip</span>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-  </button>
+  <div class="row" style="gap:6px">
+    <button class="icon-btn" id="syncBtn" title="Sync with cloud">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+    </button>
+    <button class="trip-switch" id="tripSwitchBtn">
+      <span class="emoji" id="tsEmoji">🌲</span>
+      <span class="name" id="tsName">Trip</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -317,9 +384,9 @@ nav button svg{width:23px;height:23px}
       <div id="map"></div>
       <button id="mapStyleBtn" class="map-toggle"></button>
     </div>
-    <div class="section-label">Shoot list <button id="addPinBtn">+ Add spot</button></div>
+    <div class="section-label" id="shootLabel">Shoot list <button id="addPinBtn">+ Add spot</button></div>
     <div class="card" id="pinList"></div>
-    <div class="section-label">The loose plan</div>
+    <div class="section-label" id="planLabel">The loose plan</div>
     <div id="schedule"></div>
   </section>
 
@@ -417,7 +484,10 @@ function load() {
   } catch (e) {}
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function save(bump = true) {
+  if (bump) DB.updatedAt = Date.now();
+  localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+}
 function trip() { return DB.trips.find(t => t.id === DB.activeTripId) || DB.trips[0]; }
 function uid() { return Math.random().toString(36).slice(2, 9); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -451,6 +521,66 @@ function openSheet(html) {
 }
 function closeSheet() { overlay.classList.remove('open'); sheetEl.innerHTML = ''; }
 overlay.addEventListener('click', e => { if (e.target === overlay) closeSheet(); });
+
+/* ============================================================
+   SYNC — a private GitHub Gist is the cloud. Free, yours,
+   token never leaves this device (secrets are stripped
+   from the synced file). Newest copy wins.
+   ============================================================ */
+async function gh(path, opts = {}) {
+  return fetch('https://api.github.com' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + DB.settings.ghToken, 'Accept': 'application/vnd.github+json', ...(opts.headers || {}) }
+  });
+}
+function syncPayload() {   // never ship secrets to the cloud
+  const copy = JSON.parse(JSON.stringify(DB));
+  copy.settings.apiKey = ''; copy.settings.ghToken = ''; copy.settings.gistId = '';
+  return JSON.stringify(copy);
+}
+async function findGist() {
+  if (DB.settings.gistId) {
+    const r = await gh('/gists/' + DB.settings.gistId);
+    if (r.ok) return r.json();
+    DB.settings.gistId = '';
+  }
+  const r = await gh('/gists?per_page=100');
+  if (!r.ok) throw new Error('token');
+  const hit = (await r.json()).find(g => g.files && g.files['roamize.json']);
+  if (hit) { DB.settings.gistId = hit.id; save(false); return (await gh('/gists/' + hit.id)).json(); }
+  return null;
+}
+async function syncNow() {
+  if (!DB.settings.ghToken) { toast('Add a GitHub token in Settings first'); settingsForm(); return; }
+  const btn = document.getElementById('syncBtn'); btn.classList.add('spin');
+  try {
+    const gist = await findGist();
+    if (!gist) {
+      const r = await gh('/gists', { method: 'POST', body: JSON.stringify({ description: 'Roamize sync — managed by the app', public: false, files: { 'roamize.json': { content: syncPayload() } } }) });
+      if (!r.ok) throw new Error('create');
+      DB.settings.gistId = (await r.json()).id; save(false);
+      toast('Cloud created · synced ⬆');
+    } else {
+      const f = gist.files['roamize.json'];
+      const content = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+      const remote = JSON.parse(content);
+      const rAt = remote.updatedAt || 0, lAt = DB.updatedAt || 0;
+      if (rAt > lAt) {
+        if (confirm('Cloud copy is newer (from your other device). Load it here?')) {
+          const keep = { apiKey: DB.settings.apiKey, ghToken: DB.settings.ghToken, gistId: DB.settings.gistId };
+          DB = remote; DB.settings = { ...remote.settings, ...keep };
+          save(false); renderAll(); toast('Pulled latest ⬇');
+        }
+      } else if (lAt > rAt) {
+        const r = await gh('/gists/' + DB.settings.gistId, { method: 'PATCH', body: JSON.stringify({ files: { 'roamize.json': { content: syncPayload() } } }) });
+        if (!r.ok) throw new Error('push');
+        toast('Pushed to cloud ⬆');
+      } else toast('Already in sync ✓');
+    }
+  } catch (e) { toast('Sync failed — check token & connection'); }
+  btn.classList.remove('spin');
+}
+document.getElementById('syncBtn').addEventListener('click', syncNow);
 
 /* ---------- tabs ---------- */
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -518,6 +648,9 @@ function settingsForm() {
       <input id="setKey" type="password" placeholder="sk-ant-…" value="${esc(DB.settings.apiKey)}"></div>
     <div class="field"><label>Scout's personality (blank = default)</label>
       <textarea id="setPersona" rows="6" placeholder="${esc(DEFAULT_PERSONA)}">${esc(DB.settings.persona || '')}</textarea></div>
+    <div class="field"><label>GitHub token — powers the sync button</label>
+      <input id="setGh" type="password" placeholder="ghp_… (classic token, gist scope only)" value="${esc(DB.settings.ghToken || '')}"></div>
+    <p style="font-size:12px;color:var(--muted);margin:-6px 0 12px;line-height:1.5">github.com → Settings → Developer settings → Personal access tokens → Generate new (classic) → check only <b>gist</b> → paste here on every device you want synced. Your keys are never uploaded.</p>
     <button class="btn" onclick="saveSettings()">Save</button>
     <div style="height:14px"></div>
     <button class="btn ghost" onclick="exportData()">Export trip data (JSON)</button>
@@ -531,6 +664,7 @@ function settingsForm() {
 function saveSettings() {
   DB.settings.apiKey = document.getElementById('setKey').value.trim();
   DB.settings.persona = document.getElementById('setPersona').value.trim();
+  DB.settings.ghToken = document.getElementById('setGh').value.trim();
   save(); closeSheet(); toast('Saved');
 }
 function exportData() {
@@ -1341,6 +1475,7 @@ if (window.visualViewport) {
 }
 
 /* ---------- boot ---------- */
+window.addEventListener('resize', () => { if (MAP) setTimeout(() => MAP.invalidateSize(), 120); });
 renderAll();
 switchTab('home');
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
