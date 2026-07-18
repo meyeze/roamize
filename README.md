@@ -2,6 +2,18 @@
 
 Nathan's personal trip HQ. Logistics, shoot spots on a map, a loose schedule, and Explore — a trip-aware Claude scout built in.
 
+## 🔥 Smoke Watch (new)
+
+With wildfires threatening the North Shore trip, the app now opens on the **Smoke** tab (until you lock a decision or the July 22 Airbnb refund deadline passes):
+
+- **Current air quality** — live US AQI at six Hwy 61 towns (Duluth → Grand Portage), colored with the standard AirNow bands, from Open-Meteo's air quality feed (no key needed).
+- **Outlook** — a 7-day daily worst-case AQI chart at your home base, with your decision day flagged on the chart, plus any active NWS alerts for the area.
+- **Active fires nearby** — pulled from the NIFC national fire map, sorted by distance from your Airbnb. US incidents only; Canadian smoke still shows up in the AQI numbers.
+- **Scout's call** — a Claude Sonnet verdict (uses your same API key, ~1-2¢ per run) that weighs everything against the trip dates and the refund deadline: confidence %, GO/WAIT/CANCEL, plain-English reasoning, and what to watch next. Auto-refreshes every 3 hours; the card shows when it last ran; ↻ re-runs it on demand.
+- **I've made my decision** — locks in go/cancel (with an undo), after which the app opens on Home again. The decision syncs across devices like everything else.
+
+The deadline lives in `SMOKE_DEADLINE` in index.html; the towns in `CORRIDOR`.
+
 ## Deploy to GitHub Pages (one-time, ~5 min)
 
 1. Go to **github.com/new** → name the repo `roamize` → set it **Public** → Create repository.

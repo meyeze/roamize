@@ -288,6 +288,45 @@ nav button svg{width:23px;height:23px}
 @keyframes spinsync{to{transform:rotate(360deg)}}
 
 /* ============================================================
+   SMOKE WATCH — wildfire & air quality tab 🔥
+   ============================================================ */
+#smokeBanner{
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;color:#fff;
+  background:linear-gradient(135deg,#8a5a2b 0%,#5e3038 100%);position:relative;overflow:hidden;
+}
+#smokeBanner.decided{background:linear-gradient(135deg,var(--accent) 0%,#33507e 100%)}
+#smokeBanner .big{font-size:22px;font-weight:800;letter-spacing:-.4px}
+#smokeBanner .sub{font-size:13px;opacity:.88;margin-top:3px;font-weight:500;line-height:1.5}
+#smokeBanner .sub button{text-decoration:underline;color:#fff;font-size:13px;font-weight:600}
+.aq-hero{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.aq-num{font-size:46px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.aq-bandlabel{font-size:15.5px;font-weight:700}
+.aq-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.aq-row{display:grid;grid-template-columns:88px 1fr 34px 78px;gap:8px;align-items:center;padding:5px 0;font-size:13px}
+.aq-town{color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aq-track{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.aq-fill{display:block;height:100%;border-radius:4px;transition:width .5s ease}
+.aq-val{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.aq-cat{font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aq-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:10.5px;color:var(--muted);font-weight:600}
+.aq-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+#aqChart{width:100%;height:auto;display:block}
+.alert-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.45}
+.alert-item:last-child{border-bottom:none}
+.alert-item .sev{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;margin-top:1px}
+.verdict-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.verdict-conf{font-size:40px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.verdict-call{font-size:12px;font-weight:800;letter-spacing:.07em;padding:6px 13px;border-radius:999px}
+.verdict-head{font-size:15.5px;font-weight:700;margin-bottom:6px;line-height:1.4}
+.verdict-why{font-size:14px;line-height:1.55}
+.verdict-watch{font-size:13px;color:var(--muted);margin-top:9px;line-height:1.5}
+.verdict-meta{
+  font-size:11.5px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.verdict-meta button{color:var(--accent-light);font-weight:700;font-size:11.5px}
+
+/* ============================================================
    DESKTOP — same app, roomier bones (≥900px)
    ============================================================ */
 @media (min-width: 900px){
@@ -343,6 +382,9 @@ nav button svg{width:23px;height:23px}
   #sheet .grab{display:none}
 
   #diceBtn{bottom:26px}
+
+  /* Smoke Watch: single centered column */
+  #tab-smoke{max-width:780px;margin:0 auto}
 }
 
 /* dice fab */
@@ -373,6 +415,9 @@ nav button svg{width:23px;height:23px}
 </header>
 
 <main>
+  <!-- SMOKE WATCH -->
+  <section class="tab" id="tab-smoke"></section>
+
   <!-- DETAILS -->
   <section class="tab" id="tab-details"></section>
 
@@ -411,6 +456,10 @@ nav button svg{width:23px;height:23px}
 <button id="diceBtn" title="Feeling spontaneous?">🎲</button>
 
 <nav>
+  <button data-tab="smoke">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7.5-2.9 7.5-6.8 0-2.8-1.4-4.9-3-6.6-.3 1.4-1 2.5-2.1 3.2-.3-3.2-1.8-6.2-4.9-8.3.4 3-.7 4.7-2.1 6.4-1.3 1.6-2.9 3.3-2.9 5.7C4.5 19.1 7.6 22 12 22z"/></svg>
+    Smoke
+  </button>
   <button data-tab="details">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
     Details
@@ -590,6 +639,7 @@ function switchTab(name) {
   document.getElementById('diceBtn').classList.toggle('show', name === 'home');
   if (name === 'home' && MAP) setTimeout(() => MAP.invalidateSize(), 60);
   if (name === 'explore') initExplore();
+  if (name === 'smoke') renderSmoke();
 }
 
 /* ---------- trip switcher ---------- */
@@ -929,11 +979,14 @@ async function peekPhotos(pinId) {
   }
 }
 function navTo(lat, lng) { window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, '_blank'); }
-function haversine(a, b) {
+function haversineMi(a, b) {
   const R = 3958.8, toR = x => x * Math.PI / 180;
   const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
   const h = Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
-  const mi = 2 * R * Math.asin(Math.sqrt(h));
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function haversine(a, b) {
+  const mi = haversineMi(a, b);
   return mi < 1 ? '< 1 mi' : Math.round(mi) + ' mi';
 }
 function togglePin(id) {
@@ -1163,6 +1216,7 @@ function renderAll() {
   document.getElementById('tsEmoji').textContent = t.emoji;
   document.getElementById('tsName').textContent = t.name;
   renderDetails(); renderHome();
+  if (document.getElementById('tab-smoke').classList.contains('active')) renderSmoke();
   EXPLORE_STARTED = false;
   document.getElementById('chatScroll').innerHTML = '';
 }
@@ -1474,10 +1528,327 @@ if (window.visualViewport) {
     setTimeout(() => document.documentElement.style.setProperty('--kb', '0px'), 120));
 }
 
+/* ============================================================
+   SMOKE WATCH 🔥 — live wildfire & air quality intel for the
+   North Shore, plus a Sonnet-powered go/no-go verdict.
+   Data: Open-Meteo air quality (CAMS), NWS alerts, NIFC fire map.
+   ============================================================ */
+const SMOKE_DEADLINE = '2026-07-22';           // Airbnb full-refund cutoff
+const VERDICT_MODEL  = 'claude-sonnet-4-5';    // judgment call deserves Sonnet; still ~1-2¢
+const VERDICT_TTL    = 3 * 60 * 60 * 1000;     // auto-refresh every 3 hours
+const CORRIDOR = [                              // Hwy 61 shooting corridor, SW → NE
+  { name: 'Duluth',        lat: 46.7867, lng: -92.1005 },
+  { name: 'Two Harbors',   lat: 47.0206, lng: -91.6712 },
+  { name: 'Silver Bay',    lat: 47.2942, lng: -91.2574 },
+  { name: 'Lutsen',        lat: 47.6641, lng: -90.7157 },
+  { name: 'Grand Marais',  lat: 47.7455, lng: -90.3343 },
+  { name: 'Grand Portage', lat: 47.9635, lng: -89.6848 }
+];
+function smokeFocus() {
+  const b = trip().base;
+  return (b && b.lat) ? { name: b.label || 'Home base', lat: b.lat, lng: b.lng } : CORRIDOR[4];
+}
+function smokeState() {
+  const t = trip();
+  return t.smokeWatch = t.smokeWatch || { decided: false, decision: '', verdict: null, verdictAt: 0 };
+}
+function smokeWatchActive() { return !smokeState().decided && isoDate(new Date()) <= SMOKE_DEADLINE; }
+
+/* EPA AQI bands — official categories, colors tuned for the dark theme */
+function aqiBand(a) {
+  if (a == null || isNaN(a)) return { label: 'No data',        short: '—',      color: '#8b95ab', bg: 'rgba(139,149,171,.14)' };
+  if (a <= 50)  return { label: 'Good',                        short: 'Good',   color: '#6cc999', bg: 'rgba(108,201,153,.15)' };
+  if (a <= 100) return { label: 'Moderate',                    short: 'Mod',    color: '#f2e276', bg: 'rgba(242,226,118,.13)' };
+  if (a <= 150) return { label: 'Unhealthy for sensitive',     short: 'USG',    color: '#e6993f', bg: 'rgba(230,153,63,.16)' };
+  if (a <= 200) return { label: 'Unhealthy',                   short: 'Unhlthy',color: '#c74f63', bg: 'rgba(199,79,99,.18)' };
+  if (a <= 300) return { label: 'Very unhealthy',              short: 'V.Unh',  color: '#a678dd', bg: 'rgba(166,120,221,.18)' };
+  return { label: 'Hazardous',                                 short: 'Hazrd',  color: '#b04562', bg: 'rgba(176,69,98,.2)' };
+}
+
+/* ---------- data fetchers (all free, no keys) ---------- */
+const aqCache = {};
+async function fetchAQ(lat, lng) {
+  const key = lat.toFixed(2) + ',' + lng.toFixed(2);
+  if (aqCache[key] && Date.now() - aqCache[key].at < 30 * 60 * 1000) return aqCache[key].data;
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}` +
+    `&current=us_aqi,pm2_5&hourly=us_aqi,pm2_5&forecast_days=7&timezone=auto`;
+  const res = await fetch(url); const data = await res.json();
+  if (data.error) throw new Error(data.reason || 'AQ error');
+  aqCache[key] = { at: Date.now(), data };
+  return data;
+}
+function dailyMax(aq) {
+  const times = aq.hourly?.time || [], vals = aq.hourly?.us_aqi || [], map = {};
+  times.forEach((tm, i) => {
+    const d = tm.slice(0, 10), v = vals[i];
+    if (v == null) return;
+    map[d] = map[d] || { date: d, max: 0, sum: 0, n: 0 };
+    map[d].max = Math.max(map[d].max, v); map[d].sum += v; map[d].n++;
+  });
+  return Object.values(map).map(x => ({ date: x.date, max: Math.round(x.max), avg: Math.round(x.sum / x.n) }))
+    .sort((a, b) => a.date < b.date ? -1 : 1);
+}
+async function fetchAlerts() {
+  const f = smokeFocus();
+  const res = await fetch(`https://api.weather.gov/alerts/active?point=${f.lat},${f.lng}`, { headers: { 'Accept': 'application/geo+json' } });
+  const data = await res.json();
+  return (data.features || []).map(x => ({
+    event: x.properties.event, severity: x.properties.severity, headline: x.properties.headline || ''
+  }));
+}
+async function fetchFires() {
+  const base = 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query';
+  const params = new URLSearchParams({
+    where: "IncidentTypeCategory='WF'",
+    geometry: JSON.stringify({ xmin: -94.5, ymin: 45.8, xmax: -88.0, ymax: 49.4, spatialReference: { wkid: 4326 } }),
+    geometryType: 'esriGeometryEnvelope', inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'IncidentName,IncidentSize,PercentContained,FireDiscoveryDateTime',
+    returnGeometry: 'true', outSR: '4326', f: 'json'
+  });
+  const res = await fetch(base + '?' + params);
+  const data = await res.json();
+  if (data.error) throw new Error('fire map error');
+  const f = smokeFocus();
+  return (data.features || []).map(x => ({
+    name: x.attributes.IncidentName,
+    acres: x.attributes.IncidentSize,
+    contained: x.attributes.PercentContained,
+    found: x.attributes.FireDiscoveryDateTime,
+    mi: x.geometry ? Math.round(haversineMi(f, { lat: x.geometry.y, lng: x.geometry.x })) : null
+  })).filter(x => x.name).sort((a, b) => (a.mi ?? 9e9) - (b.mi ?? 9e9));
+}
+
+/* ---------- render ---------- */
+let SMOKE_DATA = null;
+function renderSmoke() {
+  const el = document.getElementById('tab-smoke');
+  const st = smokeState(), t = trip();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const daysLeft = Math.round((parseDate(SMOKE_DEADLINE) - today) / 86400000);
+  const banner = st.decided
+    ? `<div id="smokeBanner" class="decided">
+        <div class="big">${st.decision === 'go' ? 'Decision locked: GOING 🎉' : 'Decision locked: canceled 😔'}</div>
+        <div class="sub">Smoke Watch stays live in this tab · <button onclick="undoDecision()">undo</button></div></div>`
+    : `<div id="smokeBanner">
+        <div class="big">${daysLeft > 1 ? `T-minus ${daysLeft} days to decide` : daysLeft === 1 ? 'Decide by TOMORROW' : daysLeft === 0 ? 'Decision day is TODAY' : 'Refund window has passed'}</div>
+        <div class="sub">Airbnb full refund until ${fmtDate(parseDate(SMOKE_DEADLINE))} · trip starts ${fmtDate(parseDate(t.start))}</div></div>`;
+  el.innerHTML = banner + `
+    <div class="section-label">Current air quality · Hwy 61 corridor</div>
+    <div class="card" id="aqNow"><div class="empty">Reading the air over Superior…</div></div>
+    <div class="section-label">Outlook · daily worst-case AQI at ${esc(smokeFocus().name)}</div>
+    <div class="card" id="aqOutlook"><div class="empty">Loading forecast…</div></div>
+    <div class="section-label">Active fires nearby</div>
+    <div class="card" id="fireList"><div class="empty">Checking the national fire map…</div></div>
+    <div class="section-label">Scout's call</div>
+    <div class="card" id="verdictCard"><div class="empty">Waiting on the data…</div></div>
+    ${st.decided ? '' : `<button class="btn ghost" style="margin:2px 0 18px" onclick="decisionSheet()">✅ I've made my decision</button>`}
+    <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:22px;line-height:1.55">
+      Air quality: Open-Meteo/CAMS (fire.airnow.gov equivalent) · Alerts: weather.gov · Fires: NIFC national map.<br>
+      US incidents only — smoke drifting from Canadian fires still shows in the AQI numbers.</p>`;
+  loadSmoke();
+}
+
+async function loadSmoke() {
+  const focus = smokeFocus();
+  const [corrRes, focusRes, alertsRes, firesRes] = await Promise.all([
+    Promise.allSettled(CORRIDOR.map(p => fetchAQ(p.lat, p.lng))),
+    fetchAQ(focus.lat, focus.lng).catch(() => null),
+    fetchAlerts().catch(() => null),
+    fetchFires().catch(() => null)
+  ]);
+  if (!document.getElementById('aqNow')) return;   // user left the tab / re-rendered
+
+  /* --- current corridor --- */
+  const corridorVals = CORRIDOR.map((p, i) => {
+    const r = corrRes[i];
+    const ok = r.status === 'fulfilled' && r.value.current && r.value.current.us_aqi != null;
+    return { name: p.name, aqi: ok ? Math.round(r.value.current.us_aqi) : null, pm: ok ? r.value.current.pm2_5 : null };
+  });
+  const fAqi = focusRes?.current?.us_aqi != null ? Math.round(focusRes.current.us_aqi) : null;
+  const fb = aqiBand(fAqi);
+  const asOf = focusRes?.current?.time ? new Date(focusRes.current.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—';
+  const rows = corridorVals.map(c => {
+    const b = aqiBand(c.aqi);
+    const w = c.aqi == null ? 0 : Math.min(100, c.aqi / 200 * 100);
+    return `<div class="aq-row"><span class="aq-town">${esc(c.name)}</span>
+      <span class="aq-track"><span class="aq-fill" style="width:${w}%;background:${b.color}"></span></span>
+      <span class="aq-val" style="color:${b.color}">${c.aqi ?? '—'}</span>
+      <span class="aq-cat" style="color:${b.color}">${b.short}</span></div>`;
+  }).join('');
+  document.getElementById('aqNow').innerHTML = `
+    <div class="aq-hero">
+      <div class="aq-num" style="color:${fb.color}">${fAqi ?? '—'}</div>
+      <div><div class="aq-bandlabel" style="color:${fb.color}">${fb.label}</div>
+        <div class="aq-sub">US AQI at ${esc(focus.name)} · PM2.5 ${focusRes?.current?.pm2_5 != null ? focusRes.current.pm2_5.toFixed(1) + ' µg/m³' : '—'} · as of ${asOf}</div></div>
+    </div>
+    ${rows}`;
+
+  /* --- outlook chart --- */
+  const days = focusRes ? dailyMax(focusRes).slice(0, 7) : [];
+  const legend = `<div class="aq-legend">
+    <span><i style="background:#6cc999"></i>Good ≤50</span><span><i style="background:#f2e276"></i>Moderate ≤100</span>
+    <span><i style="background:#e6993f"></i>Sensitive ≤150</span><span><i style="background:#c74f63"></i>Unhealthy ≤200</span>
+    <span><i style="background:#a678dd"></i>Very unhealthy ≤300</span><span><i style="background:#b04562"></i>Hazardous 300+</span></div>`;
+  const alertsHtml = alertsRes === null
+    ? `<div class="empty" style="padding:10px">Couldn't reach weather.gov alerts.</div>`
+    : alertsRes.length
+      ? alertsRes.map(a => {
+          const hot = /extreme|severe/i.test(a.severity || '');
+          const fg = hot ? 'var(--bad)' : 'var(--warn)';
+          const bg = hot ? 'rgba(217,107,107,.18)' : 'rgba(217,165,95,.18)';
+          return `<div class="alert-item"><span class="sev" style="background:${bg};color:${fg}">${esc(a.severity || 'Alert')}</span><span><b>${esc(a.event)}</b>${a.headline ? ' — ' + esc(a.headline) : ''}</span></div>`;
+        }).join('')
+      : `<div style="font-size:13px;color:var(--good);font-weight:600;padding:4px 0">✓ No active NWS alerts for this spot right now</div>`;
+  document.getElementById('aqOutlook').innerHTML = days.length
+    ? outlookChart(days) + legend + `<div style="height:12px"></div>${alertsHtml}`
+    : `<div class="empty">Forecast unavailable right now.</div>`;
+
+  /* --- fires --- */
+  const fireEl = document.getElementById('fireList');
+  if (firesRes === null) {
+    fireEl.innerHTML = `<div class="empty">Couldn't reach the fire map — <a href="https://fire.airnow.gov" target="_blank" style="color:var(--accent-light)">check fire.airnow.gov</a> directly.</div>`;
+  } else if (!firesRes.length) {
+    fireEl.innerHTML = `<div style="font-size:13.5px;color:var(--good);font-weight:600;padding:4px 0">✓ No active US wildfire incidents on the map near the North Shore</div>`;
+  } else {
+    fireEl.innerHTML = firesRes.slice(0, 6).map(f => `
+      <div class="pin-item"><span class="emoji">🔥</span>
+        <div class="info">
+          <div class="name">${esc(f.name)}</div>
+          <div class="note">${f.acres ? Math.round(f.acres).toLocaleString() + ' acres' : 'size unknown'} · ${f.contained != null ? f.contained + '% contained' : 'containment unknown'}${f.mi != null ? ' · ' + f.mi + ' mi away' : ''}</div>
+        </div></div>`).join('') +
+      (firesRes.length > 6 ? `<div style="font-size:12px;color:var(--muted);padding-top:8px">+ ${firesRes.length - 6} more in the wider region</div>` : '');
+  }
+
+  /* --- hand it all to Scout --- */
+  SMOKE_DATA = {
+    fetchedAt: new Date().toLocaleString('en-US'),
+    currentCorridorAQI: corridorVals,
+    forecastDailyAQI: days,
+    nwsAlerts: (alertsRes || []).map(a => a.event + (a.headline ? ': ' + a.headline : '')),
+    firesNearby: (firesRes || []).slice(0, 8).map(f => ({ name: f.name, acres: f.acres, pctContained: f.contained, milesAway: f.mi }))
+  };
+  maybeVerdict(false);
+}
+
+/* SVG bar chart — daily max AQI, colored by band, deadline flagged */
+function outlookChart(days) {
+  const t = trip();
+  const W = 340, H = 178, padT = 22, padB = 36, padL = 8, padR = 8;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = days.length;
+  const maxV = Math.max(160, ...days.map(d => d.max)) * 1.12;
+  const bw = Math.min(32, plotW / n - 10);
+  const y100 = padT + plotH - (100 / maxV) * plotH;
+  let s = `<svg id="aqChart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daily max AQI forecast">`;
+  s += `<line x1="${padL}" x2="${W - padR}" y1="${y100}" y2="${y100}" stroke="#8b95ab" stroke-width="1" stroke-dasharray="4 4" opacity=".4"/>`;
+  days.forEach((d, i) => {
+    const cx = padL + (i + .5) * (plotW / n);
+    const h = Math.max(3, (d.max / maxV) * plotH);
+    const y = padT + plotH - h;
+    const b = aqiBand(d.max);
+    const dt = parseDate(d.date);
+    const isDL = d.date === SMOKE_DEADLINE;
+    s += `<rect x="${(cx - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${b.color}"${isDL ? ' stroke="#e9edf5" stroke-width="1.5" stroke-dasharray="3 2"' : ''}/>`;
+    s += `<text x="${cx}" y="${(y - 5).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#e9edf5">${d.max}</text>`;
+    s += `<text x="${cx}" y="${H - 24}" text-anchor="middle" font-size="9.5" fill="#8b95ab">${fmtDate(dt, { weekday: 'short' })}</text>`;
+    s += `<text x="${cx}" y="${H - 13}" text-anchor="middle" font-size="8.5" fill="#8b95ab">${dt.getMonth() + 1}/${dt.getDate()}</text>`;
+    if (isDL) s += `<text x="${cx}" y="${H - 2}" text-anchor="middle" font-size="8.5" font-weight="800" fill="#e9edf5">DECIDE</text>`;
+  });
+  s += `<text x="${W - padR}" y="${y100 - 4}" text-anchor="end" font-size="8.5" fill="#8b95ab" stroke="#131826" stroke-width="3" paint-order="stroke">AQI 100 — sensitive groups</text>`;
+  s += '</svg>';
+  return s;
+}
+
+/* ---------- Scout's verdict (Sonnet, 3-hr cache) ---------- */
+let VERDICT_RUNNING = false;
+async function maybeVerdict(force) {
+  const card = document.getElementById('verdictCard'); if (!card) return;
+  const st = smokeState();
+  if (!DB.settings.apiKey) {
+    card.innerHTML = `<div class="empty">Add your Anthropic API key in Settings and Scout will weigh in here with a go/no-go call.</div>`;
+    return;
+  }
+  const fresh = st.verdict && (Date.now() - st.verdictAt < VERDICT_TTL);
+  if (fresh && !force) { renderVerdict(); return; }
+  if (VERDICT_RUNNING || !SMOKE_DATA) { if (st.verdict) renderVerdict(); return; }
+  VERDICT_RUNNING = true;
+  card.innerHTML = `<div class="empty">Scout is reading the smoke reports…</div>`;
+  const t = trip();
+  const sys = `You are Scout, the trip advisor inside Roamize, Nathan's personal trip app. He has a solo photography/drone trip to the North Shore of Lake Superior (based in Grand Marais MN, shooting along all of Highway 61 from Duluth to Grand Portage), ${t.start} to ${t.end}. Wildfire smoke is threatening the trip. His Airbnb is FULLY REFUNDABLE ONLY THROUGH END OF ${SMOKE_DEADLINE} — that is the decision deadline.
+You will get a JSON snapshot: current US AQI along the corridor, daily-max AQI forecast (note it may not extend all the way to the trip dates), active NWS alerts, and nearby US fire incidents. Smoke often drifts from Canadian fires that will NOT be in the incident list but DOES show in AQI numbers and forecast.
+Give ONE clear recommendation. "call" must be "go" (commit), "cancel" (cancel before the deadline), or "wait" (hold and re-check — only sensible while days remain before the deadline). "confidence" is your 0-100 certainty in that call. Guidance: AQI ≤100 is fine for a shoot day, 101-150 is hazy but workable (thin smoke can even make dramatic light), >150 sustained is a lost outdoor day. Weigh the trend direction heavily, and how many days remain to decide.
+Respond with ONLY a raw JSON object, no markdown, no code fences: {"confidence": <int 0-100>, "call": "go"|"cancel"|"wait", "headline": "<short e.g. '78% — lean go'>", "why": "<2-4 plain-English sentences a wildfire novice gets>", "watch": "<the single most useful thing to check next>"}`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': DB.settings.apiKey, 'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: VERDICT_MODEL, max_tokens: 700, system: sys,
+        messages: [{ role: 'user', content: 'Today is ' + new Date().toLocaleString('en-US') + '. Data snapshot:\n' + JSON.stringify(SMOKE_DATA) }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API error');
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const v = JSON.parse(raw.replace(/^[\s\S]*?\{/, '{').replace(/\}[\s\S]*$/, '}'));
+    if (!v.call || v.confidence == null) throw new Error('bad verdict format');
+    st.verdict = v; st.verdictAt = Date.now(); save();
+    renderVerdict();
+  } catch (e) {
+    if (st.verdict) renderVerdict('· refresh failed, showing last verdict');
+    else card.innerHTML = `<div class="empty">Couldn't get a verdict — ${esc(e.message || 'error')}.<br><br><button class="btn small" onclick="maybeVerdict(true)">Try again</button></div>`;
+  }
+  VERDICT_RUNNING = false;
+}
+function renderVerdict(note) {
+  const card = document.getElementById('verdictCard');
+  const st = smokeState(), v = st.verdict;
+  if (!card || !v) return;
+  const c = v.call === 'go' ? { col: 'var(--good)', bg: 'rgba(95,185,138,.16)', word: 'GO' }
+    : v.call === 'cancel' ? { col: 'var(--bad)', bg: 'rgba(217,107,107,.16)', word: 'CANCEL' }
+    : { col: 'var(--warn)', bg: 'rgba(217,165,95,.16)', word: 'WAIT' };
+  card.innerHTML = `
+    <div class="verdict-top">
+      <span class="verdict-conf" style="color:${c.col}">${v.confidence}%</span>
+      <span class="verdict-call" style="background:${c.bg};color:${c.col}">${c.word}</span>
+    </div>
+    <div class="verdict-head">${esc(v.headline || '')}</div>
+    <p class="verdict-why">${esc(v.why || '')}</p>
+    ${v.watch ? `<p class="verdict-watch">👁 Watch next: ${esc(v.watch)}</p>` : ''}
+    <div class="verdict-meta">
+      <span>Verdict from ${new Date(st.verdictAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })} · auto-refreshes every 3 hrs ${note ? esc(note) : ''}</span>
+      <button onclick="maybeVerdict(true)">↻ Refresh now</button>
+    </div>`;
+}
+
+/* ---------- the decision ---------- */
+function decisionSheet() {
+  openSheet(`<h2>Lock it in</h2>
+    <p style="font-size:13.5px;color:var(--muted);margin:-6px 0 16px;line-height:1.5">Once decided, the app opens on Home again. Smoke Watch sticks around in the tab bar either way.</p>
+    <button class="btn" onclick="lockDecision('go')">🎉 I'm going — trip is ON</button>
+    <div style="height:10px"></div>
+    <button class="btn ghost danger" onclick="lockDecision('cancel')">Canceling the trip</button>`);
+}
+function lockDecision(d) {
+  const st = smokeState(); st.decided = true; st.decision = d; save();
+  closeSheet(); renderSmoke();
+  if (d === 'go') { confettiBurst(); toast('North Shore, here we come 🌲'); }
+  else toast('Locked. Better to know than to hope.');
+}
+function undoDecision() { const st = smokeState(); st.decided = false; st.decision = ''; save(); renderSmoke(); }
+
+/* keep the verdict fresh while the app sits open */
+setInterval(() => {
+  if (document.getElementById('tab-smoke').classList.contains('active')) maybeVerdict(false);
+}, 10 * 60 * 1000);
+
 /* ---------- boot ---------- */
 window.addEventListener('resize', () => { if (MAP) setTimeout(() => MAP.invalidateSize(), 120); });
 renderAll();
-switchTab('home');
+switchTab(smokeWatchActive() ? 'smoke' : 'home');
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

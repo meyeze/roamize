@@ -1,5 +1,5 @@
 // Roamize service worker — caches the app shell so it opens fast (and mostly offline).
-const CACHE = 'roamize-v7';
+const CACHE = 'roamize-v8';
 const SHELL = [
   './index.html',
   './manifest.json',
@@ -16,8 +16,8 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // never cache API, weather, or sync calls
-  if (url.hostname.includes('api.anthropic.com') || url.hostname.includes('open-meteo.com') || url.hostname.includes('api.github.com') || url.hostname.includes('gist.githubusercontent.com')) return;
+  // never cache API, weather, alert, fire-map, or sync calls — Smoke Watch needs live data
+  if (url.hostname.includes('api.anthropic.com') || url.hostname.includes('open-meteo.com') || url.hostname.includes('api.github.com') || url.hostname.includes('gist.githubusercontent.com') || url.hostname.includes('api.weather.gov') || url.hostname.includes('services3.arcgis.com')) return;
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       if (e.request.method === 'GET' && (url.origin === location.origin || url.hostname.includes('basemaps.cartocdn.com') || url.hostname.includes('arcgisonline.com'))) {
