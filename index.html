@@ -186,9 +186,90 @@ nav button svg{width:23px;height:23px}
 .day .open-day{color:var(--muted);font-size:13px;padding:8px 2px;font-style:italic}
 .add-anchor{color:var(--accent-light);font-size:12.5px;font-weight:700;padding:7px 2px}
 
-/* ---------- explore chat ---------- */
-#tab-explore{display:none;padding:0}
-#tab-explore.active{display:flex;flex-direction:column;height:calc(100dvh - 62px - 78px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--kb,0px))}
+/* ---------- explore feed ---------- */
+.feed-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.feed-chips::-webkit-scrollbar{display:none}
+.feed-chips button{flex:none;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted)}
+.feed-chips button.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-light)}
+.feed-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.feed-card img.hero{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--surface-2);cursor:pointer}
+.feed-card .fc-body{padding:12px 14px}
+.fc-meta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:6px;flex-wrap:wrap}
+.fc-meta .src{background:var(--surface-2);border-radius:999px;padding:3px 9px}
+.fc-meta .live{background:rgba(217,107,107,.18);color:var(--bad);border-radius:999px;padding:3px 9px;font-weight:800;letter-spacing:.04em}
+.fc-title{font-size:15px;font-weight:700;line-height:1.35}
+.fc-sub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.45}
+.fc-actions{display:flex;gap:8px;margin-top:11px}
+.fc-actions button{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 0;font-size:12.5px;font-weight:700;color:var(--text)}
+.fc-actions button.saved{color:var(--good);border-color:var(--good)}
+.fc-actions button.scout{color:var(--accent-light)}
+.feed-embed{aspect-ratio:16/9;width:100%;border:none;display:block;background:#000}
+.feed-play{position:relative;cursor:pointer}
+.feed-play .pp{position:absolute;inset:0;display:grid;place-items:center;font-size:46px;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+
+/* ---------- scout bubble + panel ---------- */
+#scoutFab{
+  position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:940;
+  width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;
+  display:grid;place-items:center;box-shadow:0 6px 22px rgba(0,0,0,.5);transition:transform .15s;
+}
+#scoutFab:active{transform:scale(.92)}
+#scoutPanel{
+  position:fixed;inset:0;z-index:960;background:var(--bg);display:none;flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+}
+#scoutPanel.open{display:flex}
+#scoutPanel #composer{padding-bottom:calc(env(safe-area-inset-bottom) + 10px + var(--kb,0px))}
+
+/* ---------- reader ---------- */
+#reader{position:fixed;inset:0;z-index:1100;background:var(--bg);display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#reader.open{display:flex}
+#readerHead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+#readerHead .rt{flex:1;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#readerBody{flex:1;overflow-y:auto;padding:18px 18px calc(env(safe-area-inset-bottom) + 30px);font-size:15px;line-height:1.65;-webkit-overflow-scrolling:touch}
+#readerBody img{max-width:100%;border-radius:12px;margin:10px 0}
+#readerBody h3{margin:18px 0 8px}
+#readerBody a{color:var(--accent-light)}
+#readerBody p{margin-bottom:12px}
+
+/* ---------- route planner ---------- */
+#routeBar{
+  position:absolute;left:10px;right:10px;bottom:10px;z-index:600;
+  background:rgba(19,24,38,.94);border:1px solid var(--border);border-radius:14px;padding:10px 12px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+#routeBar .rstops{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#routeBar .ralt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+#routeBar .ralt button{background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--muted)}
+#routeBar .ralt button.on{border-color:var(--accent);color:var(--accent-light);background:var(--accent-dim)}
+#routeBar .racts{display:flex;gap:8px}
+
+/* ---------- map filter + collapsibles ---------- */
+#mapFilter{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
+#mapFilter::-webkit-scrollbar{display:none}
+#mapFilter button{flex:none;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--muted)}
+#mapFilter button.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-light)}
+.section-label .coll{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.section-label .chev{transition:transform .2s;display:inline-block;font-size:10px}
+.section-label .chev.closed{transform:rotate(-90deg)}
+
+/* ---------- forecast tab bits ---------- */
+.report-top{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.report-grade{font-size:46px;font-weight:800;letter-spacing:-1px;line-height:1}
+.report-line{display:flex;gap:8px;font-size:13px;line-height:1.5;margin-top:8px}
+.report-line .ri{flex:none}
+.wk-row{display:grid;grid-template-columns:52px 30px 1fr auto;gap:8px;align-items:center;padding:7px 0 7px 2px;border-bottom:1px solid var(--border);font-size:13px}
+.wk-row:last-child{border-bottom:none}
+.wk-row .d{font-weight:700}
+.wk-row .d small{display:block;color:var(--muted);font-weight:600;font-size:10.5px}
+.wk-row .ic{font-size:19px;text-align:center}
+.wk-row .mid{color:var(--muted);font-size:12px;line-height:1.4}
+.wk-row .t{font-weight:700;text-align:right}
+.wk-row .t small{color:var(--muted);font-weight:600}
+.fire-line{display:flex;gap:8px;align-items:center;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
+.fire-line:last-child{border-bottom:none}
+.fire-line b{font-size:13px}
+.fire-line .fm{color:var(--muted);margin-left:auto;white-space:nowrap}
 #chatBar{
   display:flex;justify-content:space-between;align-items:center;
   padding:8px 16px;border-bottom:1px solid var(--border);
@@ -288,16 +369,8 @@ nav button svg{width:23px;height:23px}
 @keyframes spinsync{to{transform:rotate(360deg)}}
 
 /* ============================================================
-   SMOKE WATCH — wildfire & air quality tab 🔥
+   FORECAST TAB — air quality, weather week, shoot report
    ============================================================ */
-#smokeBanner{
-  border-radius:var(--radius);padding:16px;margin-bottom:12px;color:#fff;
-  background:linear-gradient(135deg,#8a5a2b 0%,#5e3038 100%);position:relative;overflow:hidden;
-}
-#smokeBanner.decided{background:linear-gradient(135deg,var(--accent) 0%,#33507e 100%)}
-#smokeBanner .big{font-size:22px;font-weight:800;letter-spacing:-.4px}
-#smokeBanner .sub{font-size:13px;opacity:.88;margin-top:3px;font-weight:500;line-height:1.5}
-#smokeBanner .sub button{text-decoration:underline;color:#fff;font-size:13px;font-weight:600}
 .aq-hero{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:10px}
 .aq-num{font-size:46px;font-weight:800;letter-spacing:-1.5px;line-height:1}
 .aq-bandlabel{font-size:15.5px;font-weight:700}
@@ -346,31 +419,43 @@ nav button svg{width:23px;height:23px}
   #tab-home.active{
     display:grid;column-gap:26px;
     grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
-    grid-template-rows:auto auto auto auto auto 1fr;
+    grid-template-rows:auto auto auto auto auto auto auto 1fr;
     grid-template-areas:
       "countdown countdown"
       "golden golden"
+      "mapfilter mapfilter"
       "map shootlabel"
       "map pinlist"
       "map planlabel"
-      "map schedule";
+      "map schedule"
+      "map placeswrap";
     align-items:start;
   }
   #countdown{grid-area:countdown}
   #goldenRow{grid-area:golden}
+  #mapFilter{grid-area:mapfilter}
   #mapWrap{grid-area:map;position:sticky;top:calc(env(safe-area-inset-top) + 80px)}
   #map{height:calc(100dvh - 300px);min-height:520px}
   #shootLabel{grid-area:shootlabel;margin-top:0}
   #pinList{grid-area:pinlist}
   #planLabel{grid-area:planlabel}
   #schedule{grid-area:schedule}
+  #placesWrap{grid-area:placeswrap}
 
-  /* Explore: centered column, Claude-style */
-  #tab-explore.active{
-    max-width:820px;margin:0 auto;
-    height:calc(100dvh - 62px - env(safe-area-inset-top));
-    border-left:1px solid var(--border);border-right:1px solid var(--border);
+  /* Explore feed: centered column */
+  #tab-explore{max-width:860px;margin:0 auto}
+
+  /* Scout: floating panel bottom-right */
+  #scoutPanel{
+    inset:auto;right:20px;bottom:20px;width:440px;height:min(680px,calc(100dvh - 100px));
+    border:1px solid var(--border);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.55);
+    overflow:hidden;padding-top:0;
   }
+  #scoutFab{bottom:24px;right:20px}
+  #scoutFab:hover{filter:brightness(1.15);cursor:pointer}
+  #diceBtn{left:118px}
+  #readerBody>*{max-width:680px;margin-left:auto;margin-right:auto}
+  #readerBody p,#readerBody h3,#readerBody img{display:block}
 
   /* Details: two columns of cards */
   #tab-details{column-count:2;column-gap:26px}
@@ -387,9 +472,9 @@ nav button svg{width:23px;height:23px}
   #tab-smoke{max-width:780px;margin:0 auto}
 }
 
-/* dice fab */
+/* dice fab — left side; Scout's bubble owns the right */
 #diceBtn{
-  position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:800;
+  position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:800;
   width:52px;height:52px;border-radius:50%;background:var(--surface);border:1px solid var(--border);
   font-size:23px;display:none;place-items:center;box-shadow:0 4px 18px rgba(0,0,0,.45);
   transition:transform .15s;
@@ -425,40 +510,65 @@ nav button svg{width:23px;height:23px}
   <section class="tab active" id="tab-home">
     <div id="countdown"></div>
     <div id="goldenRow"></div>
+    <div id="mapFilter"></div>
     <div id="mapWrap">
       <div id="map"></div>
       <button id="mapStyleBtn" class="map-toggle"></button>
+      <button id="routeBtn" class="map-toggle" style="right:auto;left:10px">🧭 Route</button>
+      <div id="routeBar" style="display:none"></div>
     </div>
-    <div class="section-label" id="shootLabel">Shoot list <button id="addPinBtn">+ Add spot</button></div>
+    <div class="section-label" id="shootLabel"><span class="coll" onclick="toggleSect('shoot')"><span class="chev" id="chev-shoot">▼</span> Shoot list</span> <button id="addPinBtn">+ Add spot</button></div>
     <div class="card" id="pinList"></div>
-    <div class="section-label" id="planLabel">The loose plan</div>
+    <div class="section-label" id="planLabel"><span class="coll" onclick="toggleSect('plan')"><span class="chev" id="chev-plan">▼</span> The loose plan</span></div>
     <div id="schedule"></div>
+    <div id="placesWrap">
+      <div class="section-label" id="placesLabel"><span class="coll" onclick="toggleSect('places')"><span class="chev" id="chev-places">▼</span> Places · food &amp; stops</span> <button id="addPlaceBtn">+ Add place</button></div>
+      <div class="card" id="placesList"></div>
+    </div>
   </section>
 
-  <!-- EXPLORE -->
+  <!-- EXPLORE FEED -->
   <section class="tab" id="tab-explore">
-    <div id="chatBar">
-      <button id="chatListBtn">☰ Chats</button>
-      <button id="memoryBtn">🧠 Memory</button>
-      <button id="newChatBtn">＋ New chat</button>
-    </div>
-    <div id="chatScroll"></div>
-    <div class="explore-hint" id="hintRow"></div>
-    <div id="composer">
-      <textarea id="chatInput" rows="1" placeholder="Ask about the trip…"></textarea>
-      <button id="sendBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-      </button>
-    </div>
+    <div class="feed-chips" id="feedChips"></div>
+    <div id="feedScroll"></div>
   </section>
 </main>
 
 <button id="diceBtn" title="Feeling spontaneous?">🎲</button>
+<button id="scoutFab" title="Scout">✦</button>
+
+<!-- SCOUT — floating chat panel, all the old Explore powers -->
+<div id="scoutPanel">
+  <div id="chatBar">
+    <button id="chatListBtn">☰ Chats</button>
+    <button id="memoryBtn">🧠 Memory</button>
+    <button id="newChatBtn">＋ New</button>
+    <button id="scoutCloseBtn" style="font-size:15px">✕ Close</button>
+  </div>
+  <div id="chatScroll"></div>
+  <div class="explore-hint" id="hintRow"></div>
+  <div id="composer">
+    <textarea id="chatInput" rows="1" placeholder="Ask Scout anything…"></textarea>
+    <button id="sendBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- READER — in-app article view -->
+<div id="reader">
+  <div id="readerHead">
+    <button class="icon-btn" id="readerClose" style="font-size:15px">✕</button>
+    <span class="rt" id="readerTitle"></span>
+    <button class="icon-btn" id="readerOrig" style="font-size:15px" title="Open original">↗</button>
+  </div>
+  <div id="readerBody"></div>
+</div>
 
 <nav>
   <button data-tab="smoke">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7.5-2.9 7.5-6.8 0-2.8-1.4-4.9-3-6.6-.3 1.4-1 2.5-2.1 3.2-.3-3.2-1.8-6.2-4.9-8.3.4 3-.7 4.7-2.1 6.4-1.3 1.6-2.9 3.3-2.9 5.7C4.5 19.1 7.6 22 12 22z"/></svg>
-    Smoke
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
+    Forecast
   </button>
   <button data-tab="details">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
@@ -584,7 +694,7 @@ async function gh(path, opts = {}) {
 }
 function syncPayload() {   // never ship secrets to the cloud
   const copy = JSON.parse(JSON.stringify(DB));
-  copy.settings.apiKey = ''; copy.settings.ghToken = ''; copy.settings.gistId = '';
+  copy.settings.apiKey = ''; copy.settings.ghToken = ''; copy.settings.gistId = ''; copy.settings.ytKey = '';
   return JSON.stringify(copy);
 }
 async function findGist() {
@@ -616,7 +726,7 @@ async function syncNow() {
       const rAt = remote.updatedAt || 0, lAt = DB.updatedAt || 0;
       if (rAt > lAt) {
         if (confirm('Cloud copy is newer (from your other device). Load it here?')) {
-          const keep = { apiKey: DB.settings.apiKey, ghToken: DB.settings.ghToken, gistId: DB.settings.gistId };
+          const keep = { apiKey: DB.settings.apiKey, ghToken: DB.settings.ghToken, gistId: DB.settings.gistId, ytKey: DB.settings.ytKey };
           DB = remote; DB.settings = { ...remote.settings, ...keep };
           save(false); renderAll(); toast('Pulled latest ⬇');
         }
@@ -638,7 +748,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.id === 'tab-' + name));
   document.getElementById('diceBtn').classList.toggle('show', name === 'home');
   if (name === 'home' && MAP) setTimeout(() => MAP.invalidateSize(), 60);
-  if (name === 'explore') initExplore();
+  if (name === 'explore') renderFeed();
   if (name === 'smoke') renderSmoke();
 }
 
@@ -655,7 +765,11 @@ document.getElementById('tripSwitchBtn').addEventListener('click', () => {
     <button class="opt" onclick="settingsForm()"><span style="font-size:22px">⚙️</span><span>Settings</span></button>
   </div>`);
 });
-function setTrip(id) { DB.activeTripId = id; save(); closeSheet(); renderAll(); }
+function setTrip(id) {
+  DB.activeTripId = id; save(); closeSheet();
+  try { if (ROUTE.data) clearRoute(); } catch (e) {}
+  renderAll();
+}
 function newTripForm() {
   openSheet(`<h2>New trip</h2>
     <div class="field"><label>Name</label><input id="ntName" placeholder="Moab, UT"></div>
@@ -700,6 +814,8 @@ function settingsForm() {
       <textarea id="setPersona" rows="6" placeholder="${esc(DEFAULT_PERSONA)}">${esc(DB.settings.persona || '')}</textarea></div>
     <div class="field"><label>GitHub token — powers the sync button</label>
       <input id="setGh" type="password" placeholder="ghp_… (classic token, gist scope only)" value="${esc(DB.settings.ghToken || '')}"></div>
+    <div class="field"><label>YouTube API key — optional, adds fresh videos to Explore</label>
+      <input id="setYt" type="password" placeholder="AIza… (free — Google Cloud console → YouTube Data API v3)" value="${esc(DB.settings.ytKey || '')}"></div>
     <p style="font-size:12px;color:var(--muted);margin:-6px 0 12px;line-height:1.5">github.com → Settings → Developer settings → Personal access tokens → Generate new (classic) → check only <b>gist</b> → paste here on every device you want synced. Your keys are never uploaded.</p>
     <button class="btn" onclick="saveSettings()">Save</button>
     <div style="height:14px"></div>
@@ -715,6 +831,7 @@ function saveSettings() {
   DB.settings.apiKey = document.getElementById('setKey').value.trim();
   DB.settings.persona = document.getElementById('setPersona').value.trim();
   DB.settings.ghToken = document.getElementById('setGh').value.trim();
+  DB.settings.ytKey = document.getElementById('setYt').value.trim();
   save(); closeSheet(); toast('Saved');
 }
 function exportData() {
@@ -867,6 +984,38 @@ function removeLogistics(id) {
    ============================================================ */
 let MAP = null, MARKERS = [], STYLE_LAYERS = [];
 
+/* ---------- pin types: shoots vs everything else ---------- */
+const PIN_TYPES = {
+  shoot: { emoji: '📷', label: 'Shoot spots', color: '#5176AB' },
+  food:  { emoji: '🍽️', label: 'Food & drink', color: '#d9a55f' },
+  shop:  { emoji: '🛍️', label: 'Shops', color: '#a678dd' },
+  stop:  { emoji: '📍', label: 'Stops', color: '#5fb98a' }
+};
+function pinType(p) { return PIN_TYPES[p.type] || PIN_TYPES.shoot; }
+function renderMapFilter() {
+  const t = trip(), el = document.getElementById('mapFilter');
+  const counts = {};
+  t.pins.forEach(p => { const k = PIN_TYPES[p.type] ? p.type : 'shoot'; counts[k] = (counts[k] || 0) + 1; });
+  const keys = Object.keys(PIN_TYPES).filter(k => counts[k]);
+  if (keys.length < 2) { el.innerHTML = ''; DB.settings.mapFilter = 'all'; return; }
+  const flt = DB.settings.mapFilter || 'all';
+  el.innerHTML = [`<button class="${flt === 'all' ? 'on' : ''}" onclick="setMapFilter('all')">All (${t.pins.length})</button>`]
+    .concat(keys.map(k => `<button class="${flt === k ? 'on' : ''}" onclick="setMapFilter('${k}')">${PIN_TYPES[k].emoji} ${PIN_TYPES[k].label} (${counts[k]})</button>`))
+    .join('');
+}
+function setMapFilter(k) { DB.settings.mapFilter = k; save(false); renderMapFilter(); renderMap(); }
+
+/* ---------- collapsible home sections ---------- */
+function collState() { return DB.settings.collapsed = DB.settings.collapsed || {}; }
+function toggleSect(key) { const c = collState(); c[key] = !c[key]; save(false); applyColl(); }
+function applyColl() {
+  const c = collState();
+  [['shoot', 'pinList'], ['plan', 'schedule'], ['places', 'placesList']].forEach(([k, id]) => {
+    const el = document.getElementById(id); if (el) el.style.display = c[k] ? 'none' : '';
+    const ch = document.getElementById('chev-' + k); if (ch) ch.classList.toggle('closed', !!c[k]);
+  });
+}
+
 /* ---------- map styles: hybrid (satellite + labels) & dark ---------- */
 const MAP_STYLES = {
   hybrid: () => [
@@ -907,9 +1056,10 @@ function renderCountdown() {
 }
 
 function pinIcon(p, isBase) {
+  const bg = isBase ? '#d9a55f' : (p && p.done ? '#3a4763' : pinType(p).color);
   return L.divIcon({
     className: '', iconSize: [30, 30], iconAnchor: [15, 28], popupAnchor: [0, -26],
-    html: `<div class="pin-dot ${isBase ? 'base' : (p && p.done ? 'done' : '')}"><span>${isBase ? '🏠' : (p && p.done ? '✓' : '📷')}</span></div>`
+    html: `<div class="pin-dot ${p && p.done ? 'done' : ''}" style="background:${bg}"><span>${isBase ? '🏠' : (p && p.done ? '✓' : pinType(p).emoji)}</span></div>`
   });
 }
 function renderMap() {
@@ -925,7 +1075,8 @@ function renderMap() {
   const baseM = L.marker([t.base.lat, t.base.lng], { icon: pinIcon(null, true) }).addTo(MAP)
     .bindPopup(`<b>🏠 ${esc(t.base.label)}</b><br><span style="color:var(--muted);font-size:12.5px">${esc(t.base.address) || 'Set address in Details'}</span>`);
   MARKERS.push(baseM); pts.push([t.base.lat, t.base.lng]);
-  t.pins.forEach(p => {
+  const flt = DB.settings.mapFilter || 'all';
+  t.pins.filter(p => flt === 'all' || (p.type || 'shoot') === flt).forEach(p => {
     const m = L.marker([p.lat, p.lng], { icon: pinIcon(p) }).addTo(MAP).bindPopup(popupHtml(p));
     MARKERS.push(m); pts.push([p.lat, p.lng]);
   });
@@ -934,12 +1085,13 @@ function renderMap() {
 }
 function popupHtml(p) {
   const dist = haversine(trip().base, p);
-  return `<b>${esc(p.name)}</b><br>
+  const isShoot = (p.type || 'shoot') === 'shoot';
+  return `<b>${pinType(p).emoji} ${esc(p.name)}</b><br>
     <span style="color:#8b95ab;font-size:12.5px">${esc(p.note || '')}${p.note ? '<br>' : ''}${dist} from base</span>
     <div class="popup-actions">
-      <button onclick="togglePin('${p.id}')">${p.done ? '↺ Unshoot' : '✓ Shot it'}</button>
+      <button onclick="togglePin('${p.id}')">${p.done ? '↺ Undo' : (isShoot ? '✓ Shot it' : '✓ Done')}</button>
       <button onclick="peekPhotos('${p.id}')">📸 Peek</button>
-      <button onclick="droneCheck('${p.id}')">🚁 Wind</button>
+      ${isShoot ? `<button onclick="droneCheck('${p.id}')">🚁 Wind</button>` : ''}
       <button onclick="navTo(${p.lat},${p.lng})">🧭 Go</button>
       <button onclick="removePin('${p.id}')" style="color:var(--bad)">✕</button>
     </div>`;
@@ -992,40 +1144,51 @@ function haversine(a, b) {
 function togglePin(id) {
   const p = trip().pins.find(x => x.id === id); if (!p) return;
   p.done = !p.done; save(); renderHome();
-  if (p.done) toast(`${p.name} — in the can 🎞️`);
-  if (trip().pins.length && trip().pins.every(x => x.done)) { confettiBurst(); toast('Every spot shot. Legend. 🏆'); }
+  if (p.done) toast((p.type || 'shoot') === 'shoot' ? `${p.name} — in the can 🎞️` : `${p.name} — checked off ✓`);
+  const shoots = trip().pins.filter(x => (x.type || 'shoot') === 'shoot');
+  if (shoots.length && shoots.every(x => x.done)) { confettiBurst(); toast('Every spot shot. Legend. 🏆'); }
 }
 function removePin(id) {
   trip().pins = trip().pins.filter(x => x.id !== id); save(); renderHome();
 }
+function typeSelectHtml(defType) {
+  return `<div class="field"><label>Type</label><select id="qpType">${Object.entries(PIN_TYPES)
+    .map(([k, v]) => `<option value="${k}"${k === defType ? ' selected' : ''}>${v.emoji} ${v.label}</option>`).join('')}</select></div>`;
+}
 function quickAddPin(latlng) {
-  openSheet(`<h2>New spot</h2>
+  openSheet(`<h2>New pin</h2>
     <div class="field"><label>Name</label><input id="qpName" placeholder="Secret overlook"></div>
-    <div class="field"><label>Note</label><input id="qpNote" placeholder="Why it's worth shooting"></div>
+    ${typeSelectHtml('shoot')}
+    <div class="field"><label>Note</label><input id="qpNote" placeholder="Why it's worth the stop"></div>
     <button class="btn" onclick="createPin(${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)})">Drop pin</button>`);
 }
-document.getElementById('addPinBtn').addEventListener('click', () => {
-  openSheet(`<h2>Add spot</h2>
-    <div class="field"><label>Name</label><input id="qpName" placeholder="Palisade Head"></div>
-    <div class="field"><label>Note</label><input id="qpNote" placeholder="Why it's worth shooting"></div>
+function addSpotSheet(defType) {
+  openSheet(`<h2>${defType === 'shoot' ? 'Add spot' : 'Add place'}</h2>
+    <div class="field"><label>Name</label><input id="qpName" placeholder="${defType === 'shoot' ? 'Palisade Head' : 'World’s Best Donuts'}"></div>
+    ${typeSelectHtml(defType)}
+    <div class="field"><label>Note</label><input id="qpNote" placeholder="${defType === 'shoot' ? 'Why it’s worth shooting' : 'Why it’s worth the stop'}"></div>
     <div class="field-row">
       <div class="field"><label>Latitude</label><input id="qpLat" type="number" step="any" placeholder="47.32"></div>
       <div class="field"><label>Longitude</label><input id="qpLng" type="number" step="any" placeholder="-91.21"></div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Or long-press anywhere on the map to drop a pin there.</p>
-    <button class="btn" onclick="createPin()">Add spot</button>`);
-});
+    <button class="btn" onclick="createPin()">Add it</button>`);
+}
+document.getElementById('addPinBtn').addEventListener('click', () => addSpotSheet('shoot'));
+document.getElementById('addPlaceBtn').addEventListener('click', () => addSpotSheet('food'));
 function createPin(lat, lng) {
   const name = document.getElementById('qpName').value.trim(); if (!name) return toast('Give it a name');
   lat = lat ?? parseFloat(document.getElementById('qpLat')?.value);
   lng = lng ?? parseFloat(document.getElementById('qpLng')?.value);
   if (isNaN(lat) || isNaN(lng)) return toast('Coordinates needed — or long-press the map');
-  trip().pins.push({ id: uid(), name, lat, lng, note: document.getElementById('qpNote').value.trim(), type: 'shoot', done: false });
+  const type = document.getElementById('qpType')?.value || 'shoot';
+  trip().pins.push({ id: uid(), name, lat, lng, note: document.getElementById('qpNote').value.trim(), type: PIN_TYPES[type] ? type : 'shoot', done: false });
   save(); closeSheet(); renderHome(); toast('Pinned 📍');
 }
 function renderPinList() {
   const t = trip();
-  document.getElementById('pinList').innerHTML = t.pins.length ? t.pins.map(p => `
+  const shoots = t.pins.filter(p => (p.type || 'shoot') === 'shoot');
+  document.getElementById('pinList').innerHTML = shoots.length ? shoots.map(p => `
     <div class="pin-item">
       <span class="emoji" style="cursor:pointer" onclick="togglePin('${p.id}')">${p.done ? '✅' : '📷'}</span>
       <div class="info" style="cursor:pointer" onclick="flyTo('${p.id}')">
@@ -1034,11 +1197,27 @@ function renderPinList() {
       </div>
       <span class="wind-chip" id="wind-${p.id}" style="background:var(--surface-2);color:var(--muted)">…</span>
     </div>`).join('')
-    : '<div class="empty">No spots yet. Long-press the map or ask Explore for ideas.</div>';
+    : '<div class="empty">No spots yet. Long-press the map or ask Scout for ideas.</div>';
   loadWindChips();
+}
+function renderPlaces() {
+  const t = trip();
+  const places = t.pins.filter(p => (p.type || 'shoot') !== 'shoot');
+  document.getElementById('placesList').innerHTML = places.length ? places.map(p => `
+    <div class="pin-item">
+      <span class="emoji" style="cursor:pointer" onclick="togglePin('${p.id}')">${p.done ? '✅' : pinType(p).emoji}</span>
+      <div class="info" style="cursor:pointer" onclick="flyTo('${p.id}')">
+        <div class="name ${p.done ? 'done' : ''}">${esc(p.name)}</div>
+        <div class="note">${esc(p.note || haversine(t.base, p) + ' from base')}</div>
+      </div>
+      <button class="icon-btn" onclick="removePin('${p.id}')">✕</button>
+    </div>`).join('')
+    : '<div class="empty">Restaurants, shops, pull-offs — add one with + Add place, or ask Scout for picks.</div>';
 }
 function flyTo(id) {
   const p = trip().pins.find(x => x.id === id); if (!p || !MAP) return;
+  const flt = DB.settings.mapFilter || 'all';
+  if (flt !== 'all' && (p.type || 'shoot') !== flt) setMapFilter('all');
   MAP.flyTo([p.lat, p.lng], 13, { duration: .8 });
   const m = MARKERS.find(m => m.getLatLng().lat === p.lat && m.getLatLng().lng === p.lng);
   if (m) setTimeout(() => m.openPopup(), 850);
@@ -1105,7 +1284,7 @@ function windVerdict(mph, gust) {
   return { label: mph.toFixed(0) + ' mph', bg: 'rgba(217,107,107,.18)', fg: 'var(--bad)', word: 'Keep it grounded' };
 }
 async function loadWindChips() {
-  for (const p of trip().pins) {
+  for (const p of trip().pins.filter(x => (x.type || 'shoot') === 'shoot')) {
     const el = document.getElementById('wind-' + p.id); if (!el) continue;
     try {
       const wx = await fetchWx(p.lat, p.lng);
@@ -1166,7 +1345,7 @@ function confettiBurst() {
 }
 /* 🎲 the spontaneity dice — for open days when you can't decide */
 document.getElementById('diceBtn').addEventListener('click', () => {
-  const candidates = trip().pins.filter(p => !p.done);
+  const candidates = trip().pins.filter(p => !p.done && (p.type || 'shoot') === 'shoot');
   if (!candidates.length) return toast('Nothing left to roll — add more spots!');
   const p = candidates[Math.floor(Math.random() * candidates.length)];
   const lines = ['The dice have spoken:', 'Fate says:', 'No overthinking. Today it’s:', 'Universe pick:', 'Roll result:'];
@@ -1210,13 +1389,14 @@ document.getElementById('logoBtn').addEventListener('click', () => {
 });
 
 /* ---------- render root ---------- */
-function renderHome() { renderCountdown(); renderMap(); renderPinList(); renderSchedule(); renderGolden(); }
+function renderHome() { renderCountdown(); renderMapFilter(); renderMap(); renderPinList(); renderPlaces(); renderSchedule(); renderGolden(); applyColl(); }
 function renderAll() {
   const t = trip();
   document.getElementById('tsEmoji').textContent = t.emoji;
   document.getElementById('tsName').textContent = t.name;
   renderDetails(); renderHome();
   if (document.getElementById('tab-smoke').classList.contains('active')) renderSmoke();
+  if (document.getElementById('tab-explore').classList.contains('active')) renderFeed();
   EXPLORE_STARTED = false;
   document.getElementById('chatScroll').innerHTML = '';
 }
@@ -1257,7 +1437,7 @@ function systemPrompt() {
   const t = trip();
   const mem = memory().map(m => '- ' + m).join('\n') || '(nothing yet)';
   const open = openDays(t).map(d => fmtDate(parseDate(d), { weekday: 'long', month: 'short', day: 'numeric' })).join(', ') || 'none — every day has at least one anchor';
-  const pins = t.pins.map(p => `- ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [already shot]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
+  const pins = t.pins.map(p => `- ${pinType(p).emoji} [${p.type || 'shoot'}] ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [done]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
   const sched = tripDays(t).map(d => {
     const a = (t.schedule[d] || []).map(x => (x.time ? x.time + ' ' : '') + x.title).join('; ');
     return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}`;
@@ -1280,9 +1460,9 @@ FORMATTING: plain conversational text only. Never use markdown — no asterisks 
 
 IMPORTANT — when you recommend one or more specific places worth adding to his map, ALSO append one fenced code block per place, exactly like:
 \`\`\`suggestion
-{"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","date":"2026-07-28","time":"6:00 PM"}
+{"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","type":"shoot","date":"2026-07-28","time":"6:00 PM"}
 \`\`\`
-lat/lng must be your best real coordinates. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.
+lat/lng must be your best real coordinates. "type" is one of "shoot" (photo/drone spot), "food" (restaurants, cafes, bars), "shop" (stores), "stop" (worth-a-look stops that aren't shoots) — pick the right one. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.
 
 MEMORY WRITES — you CAN remember things across chats. When Nathan shares a lasting preference, fact, or decision worth keeping (e.g. "I hate crowds before 9 AM", "sunset over sunrise", "bringing the ND filters"), append a fenced block:
 \`\`\`memory
@@ -1418,12 +1598,12 @@ function renderAssistantContent(el, text) {
       const s = JSON.parse(m[2]);
       const card = document.createElement('div');
       card.className = 'sugg-card';
-      card.innerHTML = `<div class="sn">📍 ${esc(s.name)}</div>
+      card.innerHTML = `<div class="sn">${(PIN_TYPES[s.type] || PIN_TYPES.shoot).emoji} ${esc(s.name)}</div>
         <div class="sd">${esc(s.note || '')}${s.date ? `<br>Suggested: ${esc(s.date)}${s.time ? ' · ' + esc(s.time) : ''}` : ''}</div>`;
       const btn = document.createElement('button');
       btn.className = 'btn small'; btn.textContent = '+ Add to trip';
       btn.onclick = () => {
-        trip().pins.push({ id: uid(), name: s.name, lat: +s.lat, lng: +s.lng, note: s.note || '', type: 'shoot', done: false });
+        trip().pins.push({ id: uid(), name: s.name, lat: +s.lat, lng: +s.lng, note: s.note || '', type: PIN_TYPES[s.type] ? s.type : 'shoot', done: false });
         if (s.date && tripDays(trip()).includes(s.date)) {
           (trip().schedule[s.date] = trip().schedule[s.date] || []).push({ id: uid(), title: s.name, time: s.time || '' });
         }
@@ -1509,7 +1689,7 @@ if (window.visualViewport) {
       // ONLY intervene while typing in the Explore chat — everywhere else
       // (Settings sheet, pin forms, etc.) let iOS handle the keyboard natively.
       const chatFocused = document.activeElement === document.getElementById('chatInput')
-        && document.getElementById('tab-explore').classList.contains('active');
+        && document.getElementById('scoutPanel').classList.contains('open');
       const vv = window.visualViewport;
       const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       if (chatFocused && kb > 0) {
@@ -1529,13 +1709,13 @@ if (window.visualViewport) {
 }
 
 /* ============================================================
-   SMOKE WATCH 🔥 — live wildfire & air quality intel for the
-   North Shore, plus a Sonnet-powered go/no-go verdict.
-   Data: Open-Meteo air quality (CAMS), NWS alerts, NIFC fire map.
+   FORECAST 🌤 — daily shoot report, air quality, weather week,
+   and fire activity for the North Shore.
+   Data: Open-Meteo (weather + CAMS air quality), NWS alerts,
+   NIFC fire map. Report: Sonnet, ~1-2¢ per filing.
    ============================================================ */
-const SMOKE_DEADLINE = '2026-07-22';           // Airbnb full-refund cutoff
-const VERDICT_MODEL  = 'claude-sonnet-4-5';    // judgment call deserves Sonnet; still ~1-2¢
-const VERDICT_TTL    = 3 * 60 * 60 * 1000;     // auto-refresh every 3 hours
+const SCOUT_SONNET = 'claude-sonnet-4-5';      // the daily report deserves Sonnet
+const REPORT_TTL   = 3 * 60 * 60 * 1000;       // re-file every 3 hours
 const CORRIDOR = [                              // Hwy 61 shooting corridor, SW → NE
   { name: 'Duluth',        lat: 46.7867, lng: -92.1005 },
   { name: 'Two Harbors',   lat: 47.0206, lng: -91.6712 },
@@ -1550,9 +1730,8 @@ function smokeFocus() {
 }
 function smokeState() {
   const t = trip();
-  return t.smokeWatch = t.smokeWatch || { decided: false, decision: '', verdict: null, verdictAt: 0 };
+  return t.smokeWatch = t.smokeWatch || {};   // holds the cached daily report (legacy fields harmless)
 }
-function smokeWatchActive() { return !smokeState().decided && isoDate(new Date()) <= SMOKE_DEADLINE; }
 
 /* EPA AQI bands — official categories, colors tuned for the dark theme */
 function aqiBand(a) {
@@ -1617,44 +1796,56 @@ async function fetchFires() {
     mi: x.geometry ? Math.round(haversineMi(f, { lat: x.geometry.y, lng: x.geometry.x })) : null
   })).filter(x => x.name).sort((a, b) => (a.mi ?? 9e9) - (b.mi ?? 9e9));
 }
+const wkCache = {};
+async function fetchWeek(lat, lng) {
+  const key = lat.toFixed(2) + ',' + lng.toFixed(2);
+  if (wkCache[key] && Date.now() - wkCache[key].at < 30 * 60 * 1000) return wkCache[key].data;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset` +
+    `&hourly=visibility,cloud_cover,wind_speed_10m,precipitation_probability` +
+    `&current=temperature_2m,wind_speed_10m,wind_gusts_10m,cloud_cover,weather_code` +
+    `&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`;
+  const res = await fetch(url); const data = await res.json();
+  if (data.error) throw new Error(data.reason || 'weather error');
+  wkCache[key] = { at: Date.now(), data };
+  return data;
+}
+function wmoIcon(c) {
+  if (c === 0) return '☀️'; if (c <= 2) return '🌤️'; if (c === 3) return '☁️';
+  if (c <= 48) return '🌫️'; if (c <= 57) return '🌦️'; if (c <= 67) return '🌧️';
+  if (c <= 77) return '🌨️'; if (c <= 82) return '🌧️'; if (c <= 86) return '🌨️'; return '⛈️';
+}
 
 /* ---------- render ---------- */
 let SMOKE_DATA = null;
 function renderSmoke() {
   const el = document.getElementById('tab-smoke');
-  const st = smokeState(), t = trip();
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const daysLeft = Math.round((parseDate(SMOKE_DEADLINE) - today) / 86400000);
-  const banner = st.decided
-    ? `<div id="smokeBanner" class="decided">
-        <div class="big">${st.decision === 'go' ? 'Decision locked: GOING 🎉' : 'Decision locked: canceled 😔'}</div>
-        <div class="sub">Smoke Watch stays live in this tab · <button onclick="undoDecision()">undo</button></div></div>`
-    : `<div id="smokeBanner">
-        <div class="big">${daysLeft > 1 ? `T-minus ${daysLeft} days to decide` : daysLeft === 1 ? 'Decide by TOMORROW' : daysLeft === 0 ? 'Decision day is TODAY' : 'Refund window has passed'}</div>
-        <div class="sub">Airbnb full refund until ${fmtDate(parseDate(SMOKE_DEADLINE))} · trip starts ${fmtDate(parseDate(t.start))}</div></div>`;
-  el.innerHTML = banner + `
+  const t = trip();
+  const today = isoDate(new Date());
+  const inTrip = today >= t.start && today <= t.end;
+  el.innerHTML = `
+    <div class="section-label">Scout's shoot report · ${inTrip ? 'Day ' + (Math.round((parseDate(today) - parseDate(t.start)) / 86400000) + 1) : fmtDate(new Date())}</div>
+    <div class="card" id="reportCard"><div class="empty">Waiting on the data…</div></div>
     <div class="section-label">Current air quality · Hwy 61 corridor</div>
     <div class="card" id="aqNow"><div class="empty">Reading the air over Superior…</div></div>
-    <div class="section-label">Outlook · daily worst-case AQI at ${esc(smokeFocus().name)}</div>
-    <div class="card" id="aqOutlook"><div class="empty">Loading forecast…</div></div>
+    <div class="section-label">This week at ${esc(smokeFocus().name)}</div>
+    <div class="card" id="weekCard"><div class="empty">Loading the week…</div></div>
     <div class="section-label">Active fires nearby</div>
     <div class="card" id="fireList"><div class="empty">Checking the national fire map…</div></div>
-    <div class="section-label">Scout's call</div>
-    <div class="card" id="verdictCard"><div class="empty">Waiting on the data…</div></div>
-    ${st.decided ? '' : `<button class="btn ghost" style="margin:2px 0 18px" onclick="decisionSheet()">✅ I've made my decision</button>`}
     <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:22px;line-height:1.55">
-      Air quality: Open-Meteo/CAMS (fire.airnow.gov equivalent) · Alerts: weather.gov · Fires: NIFC national map.<br>
+      Weather + air quality: Open-Meteo · Alerts: weather.gov · Fires: NIFC national map.<br>
       US incidents only — smoke drifting from Canadian fires still shows in the AQI numbers.</p>`;
   loadSmoke();
 }
 
 async function loadSmoke() {
   const focus = smokeFocus();
-  const [corrRes, focusRes, alertsRes, firesRes] = await Promise.all([
+  const [corrRes, focusRes, alertsRes, firesRes, weekRes] = await Promise.all([
     Promise.allSettled(CORRIDOR.map(p => fetchAQ(p.lat, p.lng))),
     fetchAQ(focus.lat, focus.lng).catch(() => null),
     fetchAlerts().catch(() => null),
-    fetchFires().catch(() => null)
+    fetchFires().catch(() => null),
+    fetchWeek(focus.lat, focus.lng).catch(() => null)
   ]);
   if (!document.getElementById('aqNow')) return;   // user left the tab / re-rendered
 
@@ -1683,14 +1874,11 @@ async function loadSmoke() {
     </div>
     ${rows}`;
 
-  /* --- outlook chart --- */
-  const days = focusRes ? dailyMax(focusRes).slice(0, 7) : [];
-  const legend = `<div class="aq-legend">
-    <span><i style="background:#6cc999"></i>Good ≤50</span><span><i style="background:#f2e276"></i>Moderate ≤100</span>
-    <span><i style="background:#e6993f"></i>Sensitive ≤150</span><span><i style="background:#c74f63"></i>Unhealthy ≤200</span>
-    <span><i style="background:#a678dd"></i>Very unhealthy ≤300</span><span><i style="background:#b04562"></i>Hazardous 300+</span></div>`;
+  /* --- week forecast --- */
+  const days = focusRes ? dailyMax(focusRes) : [];
+  const aqByDate = {}; days.forEach(d => aqByDate[d.date] = d.max);
   const alertsHtml = alertsRes === null
-    ? `<div class="empty" style="padding:10px">Couldn't reach weather.gov alerts.</div>`
+    ? ''
     : alertsRes.length
       ? alertsRes.map(a => {
           const hot = /extreme|severe/i.test(a.severity || '');
@@ -1698,86 +1886,112 @@ async function loadSmoke() {
           const bg = hot ? 'rgba(217,107,107,.18)' : 'rgba(217,165,95,.18)';
           return `<div class="alert-item"><span class="sev" style="background:${bg};color:${fg}">${esc(a.severity || 'Alert')}</span><span><b>${esc(a.event)}</b>${a.headline ? ' — ' + esc(a.headline) : ''}</span></div>`;
         }).join('')
-      : `<div style="font-size:13px;color:var(--good);font-weight:600;padding:4px 0">✓ No active NWS alerts for this spot right now</div>`;
-  document.getElementById('aqOutlook').innerHTML = days.length
-    ? outlookChart(days) + legend + `<div style="height:12px"></div>${alertsHtml}`
-    : `<div class="empty">Forecast unavailable right now.</div>`;
+      : `<div style="font-size:12.5px;color:var(--good);font-weight:600;padding:6px 0 2px">✓ No active NWS alerts right now</div>`;
+  document.getElementById('weekCard').innerHTML = weekRes && weekRes.daily
+    ? renderWeekRows(weekRes, aqByDate) + alertsHtml
+    : `<div class="empty">Weather forecast unavailable right now.</div>`;
 
-  /* --- fires --- */
+  /* --- fires, condensed --- */
   const fireEl = document.getElementById('fireList');
   if (firesRes === null) {
     fireEl.innerHTML = `<div class="empty">Couldn't reach the fire map — <a href="https://fire.airnow.gov" target="_blank" style="color:var(--accent-light)">check fire.airnow.gov</a> directly.</div>`;
   } else if (!firesRes.length) {
     fireEl.innerHTML = `<div style="font-size:13.5px;color:var(--good);font-weight:600;padding:4px 0">✓ No active US wildfire incidents on the map near the North Shore</div>`;
   } else {
-    fireEl.innerHTML = firesRes.slice(0, 6).map(f => `
-      <div class="pin-item"><span class="emoji">🔥</span>
-        <div class="info">
-          <div class="name">${esc(f.name)}</div>
-          <div class="note">${f.acres ? Math.round(f.acres).toLocaleString() + ' acres' : 'size unknown'} · ${f.contained != null ? f.contained + '% contained' : 'containment unknown'}${f.mi != null ? ' · ' + f.mi + ' mi away' : ''}</div>
-        </div></div>`).join('') +
-      (firesRes.length > 6 ? `<div style="font-size:12px;color:var(--muted);padding-top:8px">+ ${firesRes.length - 6} more in the wider region</div>` : '');
+    const fmtAc = a => a == null ? '?' : a >= 1000 ? (Math.round(a / 100) / 10) + 'k ac' : Math.round(a) + ' ac';
+    fireEl.innerHTML = firesRes.slice(0, 4).map(f => `
+      <div class="fire-line">🔥 <b>${esc(f.name)}</b>
+        <span class="fm">${fmtAc(f.acres)} · ${f.contained != null ? f.contained + '%' : '?'} cont. · ${f.mi != null ? f.mi + ' mi' : '—'}</span>
+      </div>`).join('') +
+      (firesRes.length > 4 ? `<div style="font-size:11.5px;color:var(--muted);padding-top:7px">+ ${firesRes.length - 4} more in the wider region</div>` : '');
   }
 
-  /* --- hand it all to Scout --- */
+  /* --- hand it all to Scout for the daily report --- */
+  const todayIso = isoDate(new Date());
+  const hourlySlim = [];
+  if (weekRes?.hourly?.time) {
+    weekRes.hourly.time.forEach((tm, i) => {
+      const h = +tm.slice(11, 13);
+      if (tm.slice(0, 10) === todayIso && h >= 5 && h <= 22 && h % 2 === 1) {
+        hourlySlim.push({
+          time: tm.slice(11), visibilityMi: weekRes.hourly.visibility ? Math.round(weekRes.hourly.visibility[i] / 160.9) / 10 : null,
+          cloudPct: weekRes.hourly.cloud_cover?.[i], windMph: Math.round(weekRes.hourly.wind_speed_10m?.[i] ?? 0),
+          precipProb: weekRes.hourly.precipitation_probability?.[i]
+        });
+      }
+    });
+  }
+  const aqHourlyToday = [];
+  if (focusRes?.hourly?.time) {
+    focusRes.hourly.time.forEach((tm, i) => {
+      const h = +tm.slice(11, 13);
+      if (tm.slice(0, 10) === todayIso && h >= 5 && h <= 22 && h % 3 === 0) aqHourlyToday.push({ time: tm.slice(11), aqi: Math.round(focusRes.hourly.us_aqi[i] ?? 0) });
+    });
+  }
   SMOKE_DATA = {
     fetchedAt: new Date().toLocaleString('en-US'),
+    currentWeather: weekRes?.current || null,
+    sunrise: weekRes?.daily?.sunrise?.[0] || null,
+    sunset: weekRes?.daily?.sunset?.[0] || null,
+    todayHourly: hourlySlim,
     currentCorridorAQI: corridorVals,
-    forecastDailyAQI: days,
+    aqiTodayHourly: aqHourlyToday,
+    aqiDailyMaxForecast: days,
+    weekDaily: weekRes?.daily || null,
     nwsAlerts: (alertsRes || []).map(a => a.event + (a.headline ? ': ' + a.headline : '')),
-    firesNearby: (firesRes || []).slice(0, 8).map(f => ({ name: f.name, acres: f.acres, pctContained: f.contained, milesAway: f.mi }))
+    firesNearby: (firesRes || []).slice(0, 6).map(f => ({ name: f.name, acres: f.acres, pctContained: f.contained, milesAway: f.mi })),
+    unshotSpots: trip().pins.filter(p => (p.type || 'shoot') === 'shoot' && !p.done).map(p => p.name + (p.note ? ' — ' + p.note : ''))
   };
-  maybeVerdict(false);
+  maybeReport(false);
 }
 
-/* SVG bar chart — daily max AQI, colored by band, deadline flagged */
-function outlookChart(days) {
-  const t = trip();
-  const W = 340, H = 178, padT = 22, padB = 36, padL = 8, padR = 8;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const n = days.length;
-  const maxV = Math.max(160, ...days.map(d => d.max)) * 1.12;
-  const bw = Math.min(32, plotW / n - 10);
-  const y100 = padT + plotH - (100 / maxV) * plotH;
-  let s = `<svg id="aqChart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daily max AQI forecast">`;
-  s += `<line x1="${padL}" x2="${W - padR}" y1="${y100}" y2="${y100}" stroke="#8b95ab" stroke-width="1" stroke-dasharray="4 4" opacity=".4"/>`;
-  days.forEach((d, i) => {
-    const cx = padL + (i + .5) * (plotW / n);
-    const h = Math.max(3, (d.max / maxV) * plotH);
-    const y = padT + plotH - h;
-    const b = aqiBand(d.max);
-    const dt = parseDate(d.date);
-    const isDL = d.date === SMOKE_DEADLINE;
-    s += `<rect x="${(cx - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${b.color}"${isDL ? ' stroke="#e9edf5" stroke-width="1.5" stroke-dasharray="3 2"' : ''}/>`;
-    s += `<text x="${cx}" y="${(y - 5).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#e9edf5">${d.max}</text>`;
-    s += `<text x="${cx}" y="${H - 24}" text-anchor="middle" font-size="9.5" fill="#8b95ab">${fmtDate(dt, { weekday: 'short' })}</text>`;
-    s += `<text x="${cx}" y="${H - 13}" text-anchor="middle" font-size="8.5" fill="#8b95ab">${dt.getMonth() + 1}/${dt.getDate()}</text>`;
-    if (isDL) s += `<text x="${cx}" y="${H - 2}" text-anchor="middle" font-size="8.5" font-weight="800" fill="#e9edf5">DECIDE</text>`;
-  });
-  s += `<text x="${W - padR}" y="${y100 - 4}" text-anchor="end" font-size="8.5" fill="#8b95ab" stroke="#131826" stroke-width="3" paint-order="stroke">AQI 100 — sensitive groups</text>`;
-  s += '</svg>';
-  return s;
+/* week rows — icon, wind/rain/AQI, hi/lo; trip days get an accent edge */
+function renderWeekRows(week, aqByDate) {
+  const d = week.daily, t = trip(), days = tripDays(t);
+  return d.time.map((date, i) => {
+    const inTrip = days.includes(date);
+    const aqi = aqByDate[date];
+    const b = aqi != null ? aqiBand(aqi) : null;
+    return `<div class="wk-row" style="${inTrip ? 'box-shadow:inset 3px 0 0 var(--accent);padding-left:8px' : ''}">
+      <span class="d">${fmtDate(parseDate(date), { weekday: 'short' })}<small>${fmtDate(parseDate(date), { month: 'short', day: 'numeric' })}</small></span>
+      <span class="ic">${wmoIcon(d.weather_code[i])}</span>
+      <span class="mid">wind ${Math.round(d.wind_speed_10m_max[i])}${d.wind_gusts_10m_max ? '<span style="opacity:.7">/' + Math.round(d.wind_gusts_10m_max[i]) + '</span>' : ''} mph · rain ${d.precipitation_probability_max ? (d.precipitation_probability_max[i] ?? 0) : 0}%${b ? ` · <b style="color:${b.color}">AQI ${aqi}</b>` : ''}</span>
+      <span class="t">${Math.round(d.temperature_2m_max[i])}° <small>/ ${Math.round(d.temperature_2m_min[i])}°</small></span>
+    </div>`;
+  }).join('');
 }
 
-/* ---------- Scout's verdict (Sonnet, 3-hr cache) ---------- */
-let VERDICT_RUNNING = false;
-async function maybeVerdict(force) {
-  const card = document.getElementById('verdictCard'); if (!card) return;
-  const st = smokeState();
-  if (!DB.settings.apiKey) {
-    card.innerHTML = `<div class="empty">Add your Anthropic API key in Settings and Scout will weigh in here with a go/no-go call.</div>`;
+/* ---------- Scout's daily shoot report (Sonnet, 3-hr cache) ---------- */
+let REPORT_RUNNING = false;
+function reportFresh(st, today) { return st.report && st.report.date === today && (Date.now() - st.report.at < REPORT_TTL); }
+async function maybeReport(force) {
+  const card = document.getElementById('reportCard'); if (!card) return;
+  const st = smokeState(), t = trip();
+  const today = isoDate(new Date());
+  const inTrip = today >= t.start && today <= t.end;
+  if (!inTrip && !force) {
+    if (st.report && st.report.date === today) { renderReport(); return; }   // a test report from earlier today
+    card.innerHTML = `<div class="empty" style="padding:16px 8px;line-height:1.6">Scout files a shoot report here every trip morning — first one lands <b style="color:var(--text)">${fmtDate(parseDate(t.start))}</b>.<br><br>
+      <button class="btn ghost small" onclick="maybeReport(true)">🎬 Generate a test report for today</button></div>`;
     return;
   }
-  const fresh = st.verdict && (Date.now() - st.verdictAt < VERDICT_TTL);
-  if (fresh && !force) { renderVerdict(); return; }
-  if (VERDICT_RUNNING || !SMOKE_DATA) { if (st.verdict) renderVerdict(); return; }
-  VERDICT_RUNNING = true;
-  card.innerHTML = `<div class="empty">Scout is reading the smoke reports…</div>`;
-  const t = trip();
-  const sys = `You are Scout, the trip advisor inside Roamize, Nathan's personal trip app. He has a solo photography/drone trip to the North Shore of Lake Superior (based in Grand Marais MN, shooting along all of Highway 61 from Duluth to Grand Portage), ${t.start} to ${t.end}. Wildfire smoke is threatening the trip. His Airbnb is FULLY REFUNDABLE ONLY THROUGH END OF ${SMOKE_DEADLINE} — that is the decision deadline.
-You will get a JSON snapshot: current US AQI along the corridor, daily-max AQI forecast (note it may not extend all the way to the trip dates), active NWS alerts, and nearby US fire incidents. Smoke often drifts from Canadian fires that will NOT be in the incident list but DOES show in AQI numbers and forecast.
-Give ONE clear recommendation. "call" must be "go" (commit), "cancel" (cancel before the deadline), or "wait" (hold and re-check — only sensible while days remain before the deadline). "confidence" is your 0-100 certainty in that call. Guidance: AQI ≤100 is fine for a shoot day, 101-150 is hazy but workable (thin smoke can even make dramatic light), >150 sustained is a lost outdoor day. Weigh the trend direction heavily, and how many days remain to decide.
-Respond with ONLY a raw JSON object, no markdown, no code fences: {"confidence": <int 0-100>, "call": "go"|"cancel"|"wait", "headline": "<short e.g. '78% — lean go'>", "why": "<2-4 plain-English sentences a wildfire novice gets>", "watch": "<the single most useful thing to check next>"}`;
+  if (!DB.settings.apiKey) {
+    card.innerHTML = `<div class="empty">Add your Anthropic API key in Settings and Scout will file a daily shoot report here.</div>`;
+    return;
+  }
+  if (reportFresh(st, today) && !force) { renderReport(); return; }
+  if (REPORT_RUNNING) return;
+  if (!SMOKE_DATA) { if (st.report && st.report.date === today) renderReport(); return; }
+  REPORT_RUNNING = true;
+  card.innerHTML = `<div class="empty">Scout is checking the light, the wind, and the smoke…</div>`;
+  const sys = `You are Scout, the field producer inside Roamize, ${DB.settings.userName}'s personal trip app. His trip: ${t.emoji} ${t.name}, ${t.start} to ${t.end}, based at ${t.base.label} in the Grand Marais area, shooting solo photo + drone along Highway 61.
+YOUR PERSONALITY:\n${DB.settings.persona || DEFAULT_PERSONA}
+You are filing TODAY'S SHOOT REPORT. You get a JSON snapshot: current weather, today's hourly conditions (visibility in miles, cloud %, wind mph, rain chance), air quality now and through the day, sunrise/sunset, NWS alerts, nearby fires, and his still-unshot spots.
+Think like a DP planning the day: smoke/haze level and whether it kills contrast or adds mood, visibility, cloud character for light (bald sun vs texture), wind for the drone (≤12 easy, 12-18 sporty, 18+ grounded), rain windows, golden hour quality.
+${inTrip ? '' : 'NOTE: the trip has not started yet — this is a DRY-RUN report for today at the trip location, same format, so he can test the feature.'}
+Respond with ONLY a raw JSON object, no markdown, no fences:
+{"grade":"A"|"A-"|"B+"|"B"|"B-"|"C+"|"C"|"C-"|"D"|"F","headline":"<one punchy line about the day>","summary":"<2-4 plain sentences: air/smoke, sky character, visibility, drone-ability>","window":"<best shooting window today, with times>","spot":"<which unshot spot fits today best and why, one line — or empty string if none>","watch":"<the one thing that could change the day>"}
+Grade = overall shooting-day quality. Plain English, no jargon.`;
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1786,69 +2000,387 @@ Respond with ONLY a raw JSON object, no markdown, no code fences: {"confidence":
         'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: VERDICT_MODEL, max_tokens: 700, system: sys,
-        messages: [{ role: 'user', content: 'Today is ' + new Date().toLocaleString('en-US') + '. Data snapshot:\n' + JSON.stringify(SMOKE_DATA) }]
+        model: SCOUT_SONNET, max_tokens: 700, system: sys,
+        messages: [{ role: 'user', content: 'Now: ' + new Date().toLocaleString('en-US') + '. Data snapshot:\n' + JSON.stringify(SMOKE_DATA) }]
       })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
     const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const v = JSON.parse(raw.replace(/^[\s\S]*?\{/, '{').replace(/\}[\s\S]*$/, '}'));
-    if (!v.call || v.confidence == null) throw new Error('bad verdict format');
-    st.verdict = v; st.verdictAt = Date.now(); save();
-    renderVerdict();
+    const r = JSON.parse(raw.replace(/^[\s\S]*?\{/, '{').replace(/\}[\s\S]*$/, '}'));
+    if (!r.grade || !r.summary) throw new Error('bad report format');
+    st.report = { date: today, at: Date.now(), data: r, test: !inTrip }; save();
+    renderReport();
   } catch (e) {
-    if (st.verdict) renderVerdict('· refresh failed, showing last verdict');
-    else card.innerHTML = `<div class="empty">Couldn't get a verdict — ${esc(e.message || 'error')}.<br><br><button class="btn small" onclick="maybeVerdict(true)">Try again</button></div>`;
+    if (st.report && st.report.date === today) renderReport('· refresh failed, showing last report');
+    else card.innerHTML = `<div class="empty">Couldn't file the report — ${esc(e.message || 'error')}.<br><br><button class="btn small" onclick="maybeReport(true)">Try again</button></div>`;
   }
-  VERDICT_RUNNING = false;
+  REPORT_RUNNING = false;
 }
-function renderVerdict(note) {
-  const card = document.getElementById('verdictCard');
-  const st = smokeState(), v = st.verdict;
-  if (!card || !v) return;
-  const c = v.call === 'go' ? { col: 'var(--good)', bg: 'rgba(95,185,138,.16)', word: 'GO' }
-    : v.call === 'cancel' ? { col: 'var(--bad)', bg: 'rgba(217,107,107,.16)', word: 'CANCEL' }
-    : { col: 'var(--warn)', bg: 'rgba(217,165,95,.16)', word: 'WAIT' };
+function gradeColor(g) {
+  const l = (g || 'C')[0];
+  return l === 'A' ? 'var(--good)' : l === 'B' ? 'var(--accent-light)' : l === 'C' ? 'var(--warn)' : 'var(--bad)';
+}
+function renderReport(note) {
+  const card = document.getElementById('reportCard');
+  const st = smokeState(); if (!card || !st.report) return;
+  const r = st.report.data, col = gradeColor(r.grade);
   card.innerHTML = `
-    <div class="verdict-top">
-      <span class="verdict-conf" style="color:${c.col}">${v.confidence}%</span>
-      <span class="verdict-call" style="background:${c.bg};color:${c.col}">${c.word}</span>
+    ${st.report.test ? `<div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">DRY RUN — TRIP HASN'T STARTED</div>` : ''}
+    <div class="report-top">
+      <span class="report-grade" style="color:${col}">${esc(r.grade)}</span>
+      <div><div class="verdict-head" style="margin:0">${esc(r.headline || '')}</div>
+      <div class="aq-sub">Shoot-day grade · ${esc(smokeFocus().name)}</div></div>
     </div>
-    <div class="verdict-head">${esc(v.headline || '')}</div>
-    <p class="verdict-why">${esc(v.why || '')}</p>
-    ${v.watch ? `<p class="verdict-watch">👁 Watch next: ${esc(v.watch)}</p>` : ''}
+    <p class="verdict-why">${esc(r.summary || '')}</p>
+    ${r.window ? `<div class="report-line"><span class="ri">🕐</span><span><b>Best window:</b> ${esc(r.window)}</span></div>` : ''}
+    ${r.spot ? `<div class="report-line"><span class="ri">📷</span><span><b>Today's spot:</b> ${esc(r.spot)}</span></div>` : ''}
+    ${r.watch ? `<div class="report-line"><span class="ri">👁</span><span><b>Watch:</b> ${esc(r.watch)}</span></div>` : ''}
     <div class="verdict-meta">
-      <span>Verdict from ${new Date(st.verdictAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })} · auto-refreshes every 3 hrs ${note ? esc(note) : ''}</span>
-      <button onclick="maybeVerdict(true)">↻ Refresh now</button>
+      <span>Filed ${new Date(st.report.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · re-files every 3 hrs ${note ? esc(note) : ''}</span>
+      <button onclick="maybeReport(true)">↻ Re-file now</button>
     </div>`;
 }
 
-/* ---------- the decision ---------- */
-function decisionSheet() {
-  openSheet(`<h2>Lock it in</h2>
-    <p style="font-size:13.5px;color:var(--muted);margin:-6px 0 16px;line-height:1.5">Once decided, the app opens on Home again. Smoke Watch sticks around in the tab bar either way.</p>
-    <button class="btn" onclick="lockDecision('go')">🎉 I'm going — trip is ON</button>
-    <div style="height:10px"></div>
-    <button class="btn ghost danger" onclick="lockDecision('cancel')">Canceling the trip</button>`);
-}
-function lockDecision(d) {
-  const st = smokeState(); st.decided = true; st.decision = d; save();
-  closeSheet(); renderSmoke();
-  if (d === 'go') { confettiBurst(); toast('North Shore, here we come 🌲'); }
-  else toast('Locked. Better to know than to hope.');
-}
-function undoDecision() { const st = smokeState(); st.decided = false; st.decision = ''; save(); renderSmoke(); }
-
-/* keep the verdict fresh while the app sits open */
+/* keep the report fresh while the app sits open */
 setInterval(() => {
-  if (document.getElementById('tab-smoke').classList.contains('active')) maybeVerdict(false);
+  if (document.getElementById('tab-smoke').classList.contains('active')) maybeReport(false);
 }, 10 * 60 * 1000);
+
+/* ============================================================
+   SCOUT BUBBLE — same brain, chats & memory; now floats
+   over every tab instead of owning one.
+   ============================================================ */
+document.getElementById('scoutFab').addEventListener('click', () => {
+  document.getElementById('scoutPanel').classList.contains('open') ? closeScout() : openScout();
+});
+document.getElementById('scoutCloseBtn').addEventListener('click', closeScout);
+function openScout() { document.getElementById('scoutPanel').classList.add('open'); initExplore(); }
+function closeScout() { document.getElementById('scoutPanel').classList.remove('open'); }
+
+/* ============================================================
+   EXPLORE FEED — guides, fresh photos, live cams, videos.
+   Refreshes on open, caches 6h → fresh at least twice a day.
+   ============================================================ */
+const FEED_TTL = 6 * 60 * 60 * 1000;
+const CURATED = [
+  { kind: 'cam', videoId: 'n0H5FkWkjjs', title: 'Grand Marais Harbor — live cam', source: 'YouTube Live', sub: 'Real-time look at harbor conditions. If the stream restarted, tap Scout This for the link.' },
+  { kind: 'guide', url: 'https://wanderlog.com/list/itinerary/133552/5-day-grand-marais-itinerary/shared', title: '5-Day Grand Marais Itinerary', source: 'Wanderlog', sub: 'Day-by-day plan built around your exact base.' },
+  { kind: 'guide', url: 'https://northshorevisitor.com/attractions/', title: 'North Shore attractions — mile-by-mile up Hwy 61', source: 'North Shore Visitor', sub: 'The all-in-one guide: parks, waterfalls, overlooks, and stops keyed to highway mileposts.' },
+  { kind: 'guide', url: 'https://www.visitcookcounty.com/things-to-do/', title: 'Things to do in Cook County', source: 'Visit Cook County', sub: 'The official local guide for the Grand Marais / Lutsen / Grand Portage end of the shore.' }
+];
+let FEED_ITEMS = null, FEED_FILTER = 'all';
+function savedList() { const t = trip(); return t.saved = t.saved || []; }
+function feedKey() { return 'roamize.feed.' + trip().id; }
+function safeId(s) { return String(s).replace(/[^a-zA-Z0-9]/g, '').slice(-26); }
+function deent(s) { const e = document.createElement('textarea'); e.innerHTML = s || ''; return e.value; }
+function timeAgo(ts) {
+  const s = (Date.now() - ts) / 1000;
+  if (s < 3600) return Math.max(1, Math.round(s / 60)) + 'm ago';
+  if (s < 86400) return Math.round(s / 3600) + 'h ago';
+  if (s < 86400 * 30) return Math.round(s / 86400) + 'd ago';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function feedTags() {
+  const t = trip();
+  const words = t.name.toLowerCase().replace(/[^a-z ]/g, '').split(/\s+/).filter(w => w.length > 2);
+  const pinTags = t.pins.filter(p => (p.type || 'shoot') === 'shoot').map(p => p.name.toLowerCase().replace(/[^a-z]/g, ''));
+  return [...new Set([words.join(''), ...pinTags])].filter(Boolean).slice(0, 12);
+}
+
+function renderFeed() {
+  renderFeedChips();
+  loadFeed(false);
+}
+function renderFeedChips() {
+  const el = document.getElementById('feedChips');
+  const chips = [['all', 'All'], ['guide', 'Guides'], ['photo', 'Photos'], ['video', 'Video'], ['saved', '💾 Saved']];
+  el.innerHTML = chips.map(([k, l]) => `<button class="${FEED_FILTER === k ? 'on' : ''}" onclick="setFeedFilter('${k}')">${l}</button>`).join('')
+    + `<button style="margin-left:auto" onclick="loadFeed(true)">↻ Fresh</button>`;
+}
+function setFeedFilter(k) { FEED_FILTER = k; renderFeedChips(); renderFeedItems(); }
+
+async function loadFeed(force) {
+  const scroll = document.getElementById('feedScroll'); if (!scroll) return;
+  let cache = null;
+  try { cache = JSON.parse(localStorage.getItem(feedKey())); } catch (e) {}
+  if (cache && !force && Date.now() - cache.at < FEED_TTL) { FEED_ITEMS = cache.items; renderFeedItems(); return; }
+  scroll.innerHTML = '<div class="empty">Scouting fresh finds along the shore…</div>';
+  const [flickr, wiki, yt] = await Promise.all([
+    fetchFlickr().catch(() => []),
+    fetchWikiPhotos().catch(() => []),
+    fetchYT().catch(() => [])
+  ]);
+  FEED_ITEMS = mixFeed(flickr, wiki, yt);
+  try { localStorage.setItem(feedKey(), JSON.stringify({ at: Date.now(), items: FEED_ITEMS })); } catch (e) {}
+  renderFeedItems();
+}
+
+/* Flickr public feed — JSONP, no key; recent uploads tagged with trip spots */
+function fetchFlickr() {
+  return new Promise(resolve => {
+    let done = false;
+    window.jsonFlickrFeed = data => {
+      if (done) return; done = true;
+      resolve((data.items || []).map(i => ({
+        kind: 'photo', id: 'fl' + safeId(i.link), title: deent(i.title) || 'Untitled',
+        url: i.link, img: (i.media?.m || '').replace('_m.', '_z.'),
+        source: 'Flickr', sub: 'by ' + (i.author || '').replace(/.*\("([^"]+)"\).*/, '$1'),
+        at: Date.parse(i.published) || Date.now(), taken: Date.parse(i.date_taken) || 0
+      })).filter(p => p.img && (!p.taken || Date.now() - p.taken < 5 * 365 * 86400e3)));
+    };
+    const s = document.createElement('script');
+    s.src = 'https://api.flickr.com/services/feeds/photos_public.gne?tags=' + encodeURIComponent(feedTags().join(',')) + '&tagmode=any&format=json';
+    s.onerror = () => { if (!done) { done = true; resolve([]); } };
+    document.head.appendChild(s);
+    setTimeout(() => { if (!done) { done = true; resolve([]); } }, 8000);
+  });
+}
+
+/* Wikimedia Commons — real photos shot near your pins, last 5 years */
+async function fetchWikiPhotos() {
+  const pins = trip().pins.filter(p => (p.type || 'shoot') === 'shoot').slice(0, 5);
+  const all = [];
+  await Promise.all(pins.map(async p => {
+    try {
+      const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*' +
+        '&generator=geosearch&ggsnamespace=6&ggslimit=6&ggsradius=3000' +
+        `&ggscoord=${p.lat}%7C${p.lng}&prop=imageinfo&iiprop=url%7Ctimestamp&iiurlwidth=800`;
+      const d = await (await fetch(url)).json();
+      Object.values(d.query?.pages || {}).forEach(pg => {
+        const ii = pg.imageinfo && pg.imageinfo[0];
+        if (!ii || !/\.(jpe?g|png)$/i.test(ii.url)) return;
+        const ts = Date.parse(ii.timestamp);
+        if (Date.now() - ts > 5 * 365 * 86400e3) return;
+        all.push({
+          kind: 'photo', id: 'wm' + pg.pageid, title: (pg.title || '').replace(/^File:|\.\w+$/g, ''),
+          url: ii.descriptionurl || ii.url, img: ii.thumburl, source: 'Wikimedia',
+          sub: '📍 Shot near ' + p.name, at: ts
+        });
+      });
+    } catch (e) {}
+  }));
+  const seen = new Set();
+  return all.filter(x => !seen.has(x.id) && seen.add(x.id)).sort((a, b) => b.at - a.at).slice(0, 10);
+}
+
+/* YouTube — optional key unlocks live + fresh searched videos */
+async function fetchYT() {
+  const key = DB.settings.ytKey; if (!key) return [];
+  const f = smokeFocus();
+  const q = encodeURIComponent(trip().name.replace(/,/g, ' '));
+  const base = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&key=' + key +
+    `&q=${q}&location=${f.lat},${f.lng}&locationRadius=150mi`;
+  const out = [];
+  for (const extra of ['&eventType=live&maxResults=3', '&order=date&publishedAfter=' + new Date(Date.now() - 60 * 86400e3).toISOString().replace(/\.\d+Z/, 'Z')]) {
+    try {
+      const d = await (await fetch(base + extra)).json();
+      (d.items || []).forEach(v => {
+        if (!v.id?.videoId) return;
+        out.push({
+          kind: 'video', id: 'yt' + v.id.videoId, videoId: v.id.videoId,
+          title: deent(v.snippet.title), url: 'https://www.youtube.com/watch?v=' + v.id.videoId,
+          img: v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url,
+          source: 'YouTube', sub: deent(v.snippet.channelTitle),
+          live: extra.includes('live'), at: Date.parse(v.snippet.publishedAt) || Date.now()
+        });
+      });
+    } catch (e) {}
+  }
+  const seen = new Set();
+  return out.filter(v => !seen.has(v.videoId) && seen.add(v.videoId));
+}
+
+function mixFeed(flickr, wiki, yt) {
+  const cams = CURATED.filter(c => c.kind === 'cam').map(c => ({ ...c, id: 'cam' + c.videoId, url: 'https://www.youtube.com/watch?v=' + c.videoId, live: true, at: Date.now() }));
+  const guides = CURATED.filter(c => c.kind === 'guide').map(c => ({ ...c, id: 'g' + safeId(c.url), at: 0 }));
+  const liveYt = yt.filter(v => v.live);
+  const rest = [...flickr, ...wiki, ...yt.filter(v => !v.live)].sort((a, b) => b.at - a.at);
+  const out = [...cams, ...liveYt];
+  let gi = 0;
+  if (guides.length) out.push(guides[gi++]);         // one guide right up top
+  rest.forEach((it, i) => {
+    out.push(it);
+    if ((i + 1) % 4 === 0 && gi < guides.length) out.push(guides[gi++]);
+  });
+  while (gi < guides.length) out.push(guides[gi++]);
+  return out;
+}
+
+function findItem(id) { return (FEED_ITEMS || []).find(x => x.id === id) || savedList().find(x => x.id === id); }
+function renderFeedItems() {
+  const scroll = document.getElementById('feedScroll'); if (!scroll) return;
+  let items = FEED_FILTER === 'saved' ? savedList() : (FEED_ITEMS || []);
+  if (FEED_FILTER === 'guide') items = items.filter(i => i.kind === 'guide');
+  if (FEED_FILTER === 'photo') items = items.filter(i => i.kind === 'photo');
+  if (FEED_FILTER === 'video') items = items.filter(i => i.kind === 'video' || i.kind === 'cam');
+  scroll.innerHTML = items.length ? items.map(feedCard).join('')
+    : `<div class="empty">${FEED_FILTER === 'saved' ? 'Nothing saved yet — hit 💾 Save on anything worth keeping.' : 'Feed is quiet. Hit ↻ Fresh — or add a YouTube API key in Settings for more video.'}</div>`;
+}
+function isSaved(id) { return savedList().some(s => s.id === id); }
+function toggleSave(id) {
+  const list = savedList(), i = list.findIndex(s => s.id === id);
+  if (i >= 0) { list.splice(i, 1); toast('Removed from saved'); }
+  else { const it = findItem(id); if (it) { list.unshift(it); toast('Saved 💾'); } }
+  save(); renderFeedItems();
+}
+function openItem(id) { const it = findItem(id); if (it && it.url) window.open(it.url, '_blank'); }
+function playVid(id) {
+  const it = findItem(id), holder = document.getElementById('vid-' + id);
+  if (!it || !holder) return;
+  holder.outerHTML = `<iframe class="feed-embed" src="https://www.youtube-nocookie.com/embed/${it.videoId}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+}
+function feedCard(it) {
+  const savedCls = isSaved(it.id) ? 'saved' : '';
+  const savedTxt = isSaved(it.id) ? '✓ Saved' : '💾 Save';
+  let media = '';
+  if (it.kind === 'cam') media = `<iframe class="feed-embed" src="https://www.youtube-nocookie.com/embed/${it.videoId}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>`;
+  else if (it.kind === 'video') media = `<div class="feed-play" id="vid-${it.id}" onclick="playVid('${it.id}')"><img class="hero" src="${it.img}" loading="lazy" alt=""><span class="pp">▶️</span></div>`;
+  else if (it.img) media = `<img class="hero" src="${it.img}" loading="lazy" alt="" onclick="openItem('${it.id}')">`;
+  const meta = `<div class="fc-meta">
+      ${it.live ? '<span class="live">● LIVE</span>' : ''}
+      <span class="src">${esc(it.source || '')}</span>
+      ${it.at ? `<span>${timeAgo(it.at)}</span>` : ''}
+    </div>`;
+  const actions = `<div class="fc-actions">
+      ${it.kind === 'guide' ? `<button onclick="openReaderById('${it.id}')">📖 Read</button>` : ''}
+      <button class="${savedCls}" onclick="toggleSave('${it.id}')">${savedTxt}</button>
+      <button class="scout" onclick="scoutThis('${it.id}')">✦ Scout This</button>
+    </div>`;
+  return `<div class="feed-card">${media}<div class="fc-body">${meta}
+    <div class="fc-title">${esc(it.title || '')}</div>
+    ${it.sub ? `<div class="fc-sub">${esc(it.sub)}</div>` : ''}
+    ${actions}</div></div>`;
+}
+function scoutThis(id) {
+  const it = findItem(id); if (!it) return;
+  openScout(); newChat();
+  const input = document.getElementById('chatInput');
+  input.value = `Scout this from my feed: "${it.title}" (${it.url}) — `;
+  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+  input.dispatchEvent(new Event('input'));
+}
+
+/* ---------- in-app reader (jina.ai clean-text proxy, free) ---------- */
+let READER_URL = '';
+function openReaderById(id) { const it = findItem(id); if (it) openReader(it.url, it.title); }
+async function openReader(url, title) {
+  READER_URL = url;
+  document.getElementById('readerTitle').textContent = title || '';
+  const body = document.getElementById('readerBody');
+  body.innerHTML = '<div class="empty">Pulling a clean copy…</div>';
+  document.getElementById('reader').classList.add('open');
+  try {
+    const res = await fetch('https://r.jina.ai/' + url);
+    if (!res.ok) throw 0;
+    let md = await res.text();
+    if (md.length < 200) throw 0;
+    body.innerHTML = mdArticle(md);
+    body.scrollTop = 0;
+  } catch (e) {
+    body.innerHTML = `<div class="empty">Couldn't pull a clean copy of this one.<br><br><button class="btn small" onclick="window.open(READER_URL,'_blank')">Open the original ↗</button></div>`;
+  }
+}
+document.getElementById('readerClose').addEventListener('click', () => document.getElementById('reader').classList.remove('open'));
+document.getElementById('readerOrig').addEventListener('click', () => window.open(READER_URL, '_blank'));
+function mdArticle(md) {
+  md = md.replace(/^Title:.*$/m, '').replace(/^URL Source:.*$/m, '').replace(/^Published Time:.*$/m, '').replace(/^Markdown Content:$/m, '');
+  return md.split(/\n{2,}/).map(block => {
+    let b = block.trim(); if (!b) return '';
+    if (/^#{1,4}\s/.test(b)) return '<h3>' + esc(b.replace(/^#+\s*/, '')) + '</h3>';
+    b = esc(b);
+    b = b.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g, '<img src="$2" loading="lazy" alt="$1">');
+    b = b.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    b = b.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return '<p>' + b + '</p>';
+  }).join('');
+}
+
+/* ============================================================
+   ROUTE PLANNER 🧭 — pick stops from your pins, see the real
+   drive (OSRM, free), hand off to Apple Maps.
+   ============================================================ */
+let ROUTE = { layers: [], data: null, active: 0, stops: [] };
+document.getElementById('routeBtn').addEventListener('click', routeSheet);
+function routeOptionsHtml() {
+  const t = trip();
+  return `<option value="">— pick —</option><option value="base">🏠 ${esc(t.base.label)}</option>` +
+    t.pins.map(p => `<option value="${p.id}">${pinType(p).emoji} ${esc(p.name)}</option>`).join('');
+}
+function routeSheet() {
+  const row = i => `<div class="field"><label>Stop ${String.fromCharCode(65 + i)}</label><select class="routeStop">${routeOptionsHtml()}</select></div>`;
+  openSheet(`<h2>🧭 Route planner</h2>
+    <div id="routeStops">${row(0)}${row(1)}</div>
+    <button class="add-anchor" id="addStopBtn">+ Add another stop</button>
+    <div style="height:10px"></div>
+    <button class="btn" onclick="previewRoute()">Preview route</button>`);
+  sheetEl.querySelector('.routeStop').value = 'base';
+  document.getElementById('addStopBtn').onclick = () => {
+    const n = sheetEl.querySelectorAll('.routeStop').length;
+    if (n >= 5) return toast('Five stops max — it’s a road trip, not a milk run');
+    document.getElementById('routeStops').insertAdjacentHTML('beforeend', row(n));
+  };
+}
+function stopCoord(v) {
+  const t = trip();
+  if (v === 'base') return { name: t.base.label, lat: t.base.lat, lng: t.base.lng };
+  const p = t.pins.find(x => x.id === v);
+  return p ? { name: p.name, lat: p.lat, lng: p.lng } : null;
+}
+async function previewRoute() {
+  const stops = [...sheetEl.querySelectorAll('.routeStop')].map(s => s.value).filter(Boolean).map(stopCoord).filter(Boolean);
+  if (stops.length < 2) return toast('Pick at least a start and an end');
+  closeSheet(); switchTab('home'); toast('Routing…');
+  try {
+    const coords = stops.map(s => `${s.lng},${s.lat}`).join(';');
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?alternatives=true&overview=full&geometries=geojson`);
+    const data = await res.json();
+    if (data.code !== 'Ok' || !data.routes?.length) throw 0;
+    ROUTE = { layers: [], data, active: 0, stops };
+    drawRoute();
+  } catch (e) { toast('Routing service unavailable — give it a minute and retry'); }
+}
+function clearRoute(keepData) {
+  ROUTE.layers.forEach(l => MAP.removeLayer(l)); ROUTE.layers = [];
+  if (!keepData) {
+    ROUTE.data = null;
+    const b = document.getElementById('routeBar'); if (b) b.style.display = 'none';
+    renderMap();
+  }
+}
+function drawRoute() {
+  clearRoute(true);
+  const { data, active, stops } = ROUTE;
+  const order = data.routes.map((_, i) => i).filter(i => i !== active).concat(active);   // active drawn last, on top
+  order.forEach(i => {
+    const isA = i === active;
+    const line = L.geoJSON(data.routes[i].geometry, {
+      style: { color: isA ? '#7da2d9' : '#8b95ab', weight: isA ? 5 : 3, opacity: isA ? .95 : .45, dashArray: isA ? null : '6 8' }
+    });
+    line.on('click', () => { ROUTE.active = i; drawRoute(); });
+    line.addTo(MAP); ROUTE.layers.push(line);
+  });
+  MAP.fitBounds(ROUTE.layers[ROUTE.layers.length - 1].getBounds(), { padding: [40, 40] });
+  const fmtR = r => `${(r.distance / 1609.34).toFixed(r.distance > 16093 ? 0 : 1)} mi · ${r.duration >= 3600 ? Math.floor(r.duration / 3600) + 'h ' + Math.round(r.duration % 3600 / 60) + 'm' : Math.round(r.duration / 60) + ' min'}`;
+  const bar = document.getElementById('routeBar');
+  bar.innerHTML = `
+    <div class="rstops">${stops.map(s => esc(s.name)).join(' → ')}</div>
+    <div class="ralt">${data.routes.map((r, i) => `<button class="${i === active ? 'on' : ''}" onclick="ROUTE.active=${i};drawRoute()">${i === 0 ? 'Fastest' : 'Alt ' + i} · ${fmtR(r)}</button>`).join('')}</div>
+    <div class="racts">
+      <button class="btn small" style="flex:1" onclick="openAppleMaps()"> Open in Apple Maps</button>
+      <button class="btn ghost small" onclick="clearRoute()">✕ Clear</button>
+    </div>`;
+  bar.style.display = 'block';
+}
+function openAppleMaps() {
+  const s = ROUTE.stops; if (!s || s.length < 2) return;
+  window.open(`https://maps.apple.com/?saddr=${s[0].lat},${s[0].lng}&daddr=${s.slice(1).map(x => x.lat + ',' + x.lng).join('+to:')}&dirflg=d`, '_blank');
+}
 
 /* ---------- boot ---------- */
 window.addEventListener('resize', () => { if (MAP) setTimeout(() => MAP.invalidateSize(), 120); });
 renderAll();
-switchTab(smokeWatchActive() ? 'smoke' : 'home');
+switchTab('home');
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

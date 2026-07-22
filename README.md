@@ -2,17 +2,24 @@
 
 Nathan's personal trip HQ. Logistics, shoot spots on a map, a loose schedule, and Explore — a trip-aware Claude scout built in.
 
-## 🔥 Smoke Watch (new)
+## 🌤 Forecast tab
 
-With wildfires threatening the North Shore trip, the app now opens on the **Smoke** tab (until you lock a decision or the July 22 Airbnb refund deadline passes):
+The old Smoke Watch, evolved for the trip itself:
 
-- **Current air quality** — live US AQI at six Hwy 61 towns (Duluth → Grand Portage), colored with the standard AirNow bands, from Open-Meteo's air quality feed (no key needed).
-- **Outlook** — a 7-day daily worst-case AQI chart at your home base, with your decision day flagged on the chart, plus any active NWS alerts for the area.
-- **Active fires nearby** — pulled from the NIFC national fire map, sorted by distance from your Airbnb. US incidents only; Canadian smoke still shows up in the AQI numbers.
-- **Scout's call** — a Claude Sonnet verdict (uses your same API key, ~1-2¢ per run) that weighs everything against the trip dates and the refund deadline: confidence %, GO/WAIT/CANCEL, plain-English reasoning, and what to watch next. Auto-refreshes every 3 hours; the card shows when it last ran; ↻ re-runs it on demand.
-- **I've made my decision** — locks in go/cancel (with an undo), after which the app opens on Home again. The decision syncs across devices like everything else.
+- **Scout's shoot report** — every trip morning, Sonnet grades the shooting day (A–F) from smoke, visibility, cloud character, wind, rain windows and golden hour, names the best window and the best unshot spot. Re-files every 3 hrs, timestamp shown, ↻ to re-file now. Before the trip there's a test-report button.
+- **Current air quality** — live US AQI at six Hwy 61 towns (Duluth → Grand Portage), AirNow color bands, no key needed.
+- **This week** — 7-day weather rows (conditions, wind/gusts, rain %, hi/lo) with daily worst-case AQI inline; trip days get an accent edge; NWS alerts below.
+- **Active fires nearby** — condensed NIFC list, sorted by distance. US incidents only; Canadian smoke still shows in AQI.
 
-The deadline lives in `SMOKE_DEADLINE` in index.html; the towns in `CORRIDOR`.
+## 🗺 Home upgrades
+
+- **Pin types** — 📷 shoot / 🍽️ food / 🛍️ shop / 📍 stop. Filter chips above the map, non-shoot pins live in a **Places** list under the loose plan. Scout's suggestions carry a type too.
+- **Collapsible sections** — tap a section title to fold Shoot list / Loose plan / Places.
+- **🧭 Route planner** — button on the map: pick stops (A, B, + up to 5) from base + pins, see the real drive drawn on the map with alternates and mi/time totals (OSRM, free), then **Open in Apple Maps**. Multi-stop handoff uses Apple's `+to:` trick — works on iOS today, not officially documented.
+
+## ✦ Scout bubble + Explore feed
+
+Scout moved out of the Explore tab into a **floating ✦ bubble** on every screen — same chats, memory, suggestions. Explore is now a **feed**: curated North Shore guides (readable in-app via a clean-text reader), fresh geo-tagged photos near your pins (Flickr + Wikimedia, ≤5 yrs old), the Grand Marais live harbor cam, and — if you add a free YouTube API key in Settings — live streams and fresh videos about the area. Every card: **💾 Save** (Saved filter keeps them) and **✦ Scout This** (opens Scout pre-loaded with the link). Feed refreshes on open, cached 6 hrs.
 
 ## Deploy to GitHub Pages (one-time, ~5 min)
 
