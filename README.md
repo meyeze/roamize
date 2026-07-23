@@ -11,6 +11,12 @@ The old Smoke Watch, evolved for the trip itself:
 - **This week** — 7-day weather rows (conditions, wind/gusts, rain %, hi/lo) with daily worst-case AQI inline; trip days get an accent edge; NWS alerts below.
 - **Active fires nearby** — condensed NIFC list, sorted by distance. US incidents only; Canadian smoke still shows in AQI.
 
+## 🧭 Saved routes on the loose plan
+
+Each day now has **+ route** next to + anchor: build a multi-stop route in Apple Maps, Share → Copy, paste the `maps.apple/r/…` link with a label. It saves as a tappable card on that day that reopens the exact route in Apple Maps. (Shared links replay the route exactly as saved — Apple doesn't let outside apps rewrite the first stop to "current location". For that, use Roamize's route planner, where Stop A can be **📍 Current location**.)
+
+Scout can also **read links now** — paste any URL in chat (or hit Scout This in the feed) and the app fetches the page text for him. And his briefing now includes your Details-tab logistics as hard constraints, so fill in your flights and he'll plan around them.
+
 ## 🗺 Home upgrades
 
 - **Pin types** — 📷 shoot / 🍽️ food / 🛍️ shop / 📍 stop. Filter chips above the map, non-shoot pins live in a **Places** list under the loose plan. Scout's suggestions carry a type too.

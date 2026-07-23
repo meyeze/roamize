@@ -1230,7 +1230,13 @@ function renderSchedule() {
   document.getElementById('schedule').innerHTML = tripDays(t).map(d => {
     const anchors = (t.schedule[d] || []);
     const dt = parseDate(d);
-    const items = anchors.map(a => `
+    const items = anchors.map(a => a.url ? `
+      <div class="anchor" onclick="window.open('${esc(a.url)}','_blank')" style="cursor:pointer;border-color:var(--accent);background:var(--accent-dim)">
+        <span class="t">🧭</span>
+        <span>${esc(a.title)}</span>
+        <span style="margin-left:auto;flex:none;font-size:11.5px;color:var(--accent-light);font-weight:700;white-space:nowrap">Open in Maps ›</span>
+        <button class="x" onclick="event.stopPropagation();removeAnchor('${d}','${a.id}')">✕</button>
+      </div>` : `
       <div class="anchor">
         ${a.time ? `<span class="t">${esc(a.time)}</span>` : '<span class="t" style="opacity:.4">—</span>'}
         <span>${esc(a.title)}</span>
@@ -1239,11 +1245,28 @@ function renderSchedule() {
     return `<div class="day">
       <div class="day-head">
         <span class="d">${fmtDate(dt, { weekday: 'long' })}<small>${fmtDate(dt, { month: 'short', day: 'numeric' })}</small></span>
-        <button class="add-anchor" onclick="addAnchorForm('${d}')">+ anchor</button>
+        <span><button class="add-anchor" onclick="addRouteForm('${d}')">+ route</button>&nbsp;&nbsp;<button class="add-anchor" onclick="addAnchorForm('${d}')">+ anchor</button></span>
       </div>
       ${items || '<div class="open-day">Open — room for spontaneity ✨</div>'}
     </div>`;
   }).join('');
+}
+function addRouteForm(date) {
+  openSheet(`<h2>🧭 Save a route · ${fmtDate(parseDate(date), { weekday: 'long', month: 'short', day: 'numeric' })}</h2>
+    <div class="field"><label>Label</label><input id="rtLabel" placeholder="Airport → Target → Airbnb"></div>
+    <div class="field"><label>Apple Maps link</label><input id="rtUrl" placeholder="https://maps.apple/r/…" inputmode="url" autocapitalize="off" autocorrect="off"></div>
+    <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;line-height:1.55">In Apple Maps: build the route with all its stops → tap the share button → Copy → paste here. Tapping the saved card reopens the exact route, stops and all.</p>
+    <button class="btn" onclick="createRoute('${date}')">Save route</button>`);
+}
+function createRoute(date) {
+  const label = document.getElementById('rtLabel').value.trim() || 'Saved route';
+  let url = document.getElementById('rtUrl').value.trim();
+  if (!url) return toast('Paste the Maps link first');
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  if (!/maps\.apple|apple\.com|maps\.app\.goo|google\.[a-z.]+\/maps|goo\.gl/i.test(url)) return toast("That doesn't look like a Maps link");
+  const t = trip();
+  (t.schedule[date] = t.schedule[date] || []).push({ id: uid(), title: label, time: '', url });
+  save(); closeSheet(); renderSchedule(); toast('Route saved 🧭');
 }
 function addAnchorForm(date) {
   openSheet(`<h2>${fmtDate(parseDate(date), { weekday: 'long', month: 'short', day: 'numeric' })}</h2>
@@ -1439,9 +1462,13 @@ function systemPrompt() {
   const open = openDays(t).map(d => fmtDate(parseDate(d), { weekday: 'long', month: 'short', day: 'numeric' })).join(', ') || 'none — every day has at least one anchor';
   const pins = t.pins.map(p => `- ${pinType(p).emoji} [${p.type || 'shoot'}] ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [done]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
   const sched = tripDays(t).map(d => {
-    const a = (t.schedule[d] || []).map(x => (x.time ? x.time + ' ' : '') + x.title).join('; ');
+    const a = (t.schedule[d] || []).map(x => (x.url ? '🧭 saved route: ' : '') + (x.time ? x.time + ' ' : '') + x.title).join('; ');
     return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}`;
   }).join('\n');
+  const logi = t.logistics.map(l => {
+    const f = Object.entries(l.fields).filter(([k, v]) => v).map(([k, v]) => k + ': ' + v).join(', ');
+    return `- ${l.title}${f ? ' — ' + f : ''}${l.notes ? ' (note: ' + l.notes + ')' : ''}`;
+  }).join('\n') || '(none entered)';
   return `You are Scout, the built-in travel scout inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. Be concise and useful; short conversational paragraphs.
 
 YOUR PERSONALITY:
@@ -1449,6 +1476,9 @@ ${DB.settings.persona || DEFAULT_PERSONA}
 
 CURRENT TRIP: ${t.emoji} ${t.name}, ${t.start} to ${t.end}.
 HOME BASE: ${t.base.label}${t.base.address ? ' at ' + t.base.address : ''} (${t.base.lat}, ${t.base.lng}).
+LOGISTICS (flights, car, stay — TREAT THESE AS HARD CONSTRAINTS):
+${logi}
+Flight days are travel days: never schedule shoots that conflict with a flight, checkout, or pickup — assume he needs ~3 hours clear before any departure. If MEMORY or logistics say the trip effectively ends earlier than the trip dates (e.g. a flight home), respect that over the dates.
 OPEN DAYS (unscheduled): ${open}
 SHOOT LIST:\n${pins}
 SCHEDULE:\n${sched}
@@ -1468,7 +1498,9 @@ MEMORY WRITES — you CAN remember things across chats. When Nathan shares a las
 \`\`\`memory
 {"note":"short single fact, max ~15 words"}
 \`\`\`
-The app saves it permanently and it will appear in your MEMORY section in every future chat. Use it sparingly — durable facts only, not small talk. If he explicitly says to remember something, always write it. Don't mention the block in prose; the app shows a confirmation.`;
+The app saves it permanently and it will appear in your MEMORY section in every future chat. Use it sparingly — durable facts only, not small talk. If he explicitly says to remember something, always write it. Don't mention the block in prose; the app shows a confirmation.
+
+LINKS — you CAN read them. When Nathan's message contains a URL, the app fetches the page and appends its text after a marker line "[Roamize fetched the linked page for you:]". Treat that as you having read the link — never say you can't open links. If no fetched content appears, the fetch failed; say the page wouldn't load rather than that you lack the ability.`;
 }
 
 function initExplore() {
@@ -1620,6 +1652,18 @@ function renderAssistantContent(el, text) {
   el.innerHTML = ''; el.appendChild(frag);
 }
 
+async function fetchLinkContext(url) {
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('https://r.jina.ai/' + url, { signal: ctrl.signal });
+    clearTimeout(to);
+    if (!res.ok) return null;
+    const md = await res.text();
+    if (md.length < 100) return null;
+    return md.slice(0, 6000);
+  } catch (e) { return null; }
+}
 async function sendChat(preset) {
   if (SENDING) return;
   const input = document.getElementById('chatInput');
@@ -1641,6 +1685,13 @@ async function sendChat(preset) {
 
   SENDING = true; document.getElementById('sendBtn').disabled = true;
   try {
+    /* if the message has a link, fetch it so Scout can actually read it */
+    const msgs = CURRENT_CHAT.messages.slice(-16).map(m => ({ role: m.role, content: m.content }));
+    const urlMatch = text.match(/https?:\/\/[^\s)<>"']+/);
+    if (urlMatch) {
+      const ctx = await fetchLinkContext(urlMatch[0]);
+      if (ctx) msgs[msgs.length - 1] = { role: 'user', content: text + '\n\n[Roamize fetched the linked page for you:]\n' + ctx };
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -1653,7 +1704,7 @@ async function sendChat(preset) {
         model: EXPLORE_MODEL,
         max_tokens: 1200,
         system: systemPrompt(),
-        messages: CURRENT_CHAT.messages.slice(-16)   // keep context light = cheap
+        messages: msgs   // keep context light = cheap
       })
     });
     const data = await res.json();
@@ -2304,7 +2355,7 @@ let ROUTE = { layers: [], data: null, active: 0, stops: [] };
 document.getElementById('routeBtn').addEventListener('click', routeSheet);
 function routeOptionsHtml() {
   const t = trip();
-  return `<option value="">— pick —</option><option value="base">🏠 ${esc(t.base.label)}</option>` +
+  return `<option value="">— pick —</option><option value="me">📍 Current location</option><option value="base">🏠 ${esc(t.base.label)}</option>` +
     t.pins.map(p => `<option value="${p.id}">${pinType(p).emoji} ${esc(p.name)}</option>`).join('');
 }
 function routeSheet() {
@@ -2323,6 +2374,7 @@ function routeSheet() {
 }
 function stopCoord(v) {
   const t = trip();
+  if (v === 'me') return { name: 'Current location', me: true, lat: null, lng: null };
   if (v === 'base') return { name: t.base.label, lat: t.base.lat, lng: t.base.lng };
   const p = t.pins.find(x => x.id === v);
   return p ? { name: p.name, lat: p.lat, lng: p.lng } : null;
@@ -2331,6 +2383,16 @@ async function previewRoute() {
   const stops = [...sheetEl.querySelectorAll('.routeStop')].map(s => s.value).filter(Boolean).map(stopCoord).filter(Boolean);
   if (stops.length < 2) return toast('Pick at least a start and an end');
   closeSheet(); switchTab('home'); toast('Routing…');
+  for (const s of stops) {
+    if (!s.me) continue;
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, maximumAge: 60000 }));
+      s.lat = pos.coords.latitude; s.lng = pos.coords.longitude;
+    } catch (e) {
+      const b = trip().base; s.lat = b.lat; s.lng = b.lng;
+      toast('No location fix — previewing from home base');
+    }
+  }
   try {
     const coords = stops.map(s => `${s.lng},${s.lat}`).join(';');
     const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?alternatives=true&overview=full&geometries=geojson`);
@@ -2374,7 +2436,9 @@ function drawRoute() {
 }
 function openAppleMaps() {
   const s = ROUTE.stops; if (!s || s.length < 2) return;
-  window.open(`https://maps.apple.com/?saddr=${s[0].lat},${s[0].lng}&daddr=${s.slice(1).map(x => x.lat + ',' + x.lng).join('+to:')}&dirflg=d`, '_blank');
+  /* first stop = current location → omit saddr; Apple Maps then starts wherever he is */
+  const saddr = s[0].me ? '' : `saddr=${s[0].lat},${s[0].lng}&`;
+  window.open(`https://maps.apple.com/?${saddr}daddr=${s.slice(1).map(x => x.lat + ',' + x.lng).join('+to:')}&dirflg=d`, '_blank');
 }
 
 /* ---------- boot ---------- */
