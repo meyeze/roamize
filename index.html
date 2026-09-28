@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Roamize">
 <meta name="theme-color" content="#0b0e14">
+<meta name="color-scheme" content="dark">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -398,6 +399,20 @@ nav button svg{width:23px;height:23px}
   display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
 }
 .verdict-meta button{color:var(--accent-light);font-weight:700;font-size:11.5px}
+/* foliage tracker */
+.fol-hero{display:flex;align-items:center;gap:16px;padding-bottom:12px}
+.fol-num{font-size:50px;font-weight:800;letter-spacing:-2px;line-height:1}
+.fol-num small{font-size:22px;letter-spacing:0;margin-left:1px;opacity:.85}
+.fol-gauge{
+  position:relative;height:10px;border-radius:5px;
+  background:linear-gradient(90deg,#4f9e6f 0%,#8fc25e 18%,#d9c65f 36%,#e6993f 55%,#d96b6b 74%,#b34d33 90%,#7a5a3d 100%);
+}
+.fol-mark{
+  position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:#fff;
+  transform:translateX(-50%);box-shadow:0 0 0 2px var(--surface),0 2px 8px rgba(0,0,0,.5);transition:left .6s ease;
+}
+.day-head .wsc{display:inline-flex;align-items:center}
+.day-head .wsc .wind-chip{font-size:10.5px;padding:2px 7px}
 
 /* ============================================================
    DESKTOP — same app, roomier bones (≥900px)
@@ -492,7 +507,7 @@ nav button svg{width:23px;height:23px}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
     </button>
     <button class="trip-switch" id="tripSwitchBtn">
-      <span class="emoji" id="tsEmoji">🌲</span>
+      <span class="emoji" id="tsEmoji">🍁</span>
       <span class="name" id="tsName">Trip</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
     </button>
@@ -515,6 +530,7 @@ nav button svg{width:23px;height:23px}
       <div id="map"></div>
       <button id="mapStyleBtn" class="map-toggle"></button>
       <button id="routeBtn" class="map-toggle" style="right:auto;left:10px">🧭 Route</button>
+      <button id="captureBtn" class="map-toggle" style="right:auto;left:98px;border-color:var(--accent);color:var(--accent-light)">📍 Capture</button>
       <div id="routeBar" style="display:none"></div>
     </div>
     <div class="section-label" id="shootLabel"><span class="coll" onclick="toggleSect('shoot')"><span class="chev" id="chev-shoot">▼</span> Shoot list</span> <button id="addPinBtn">+ Add spot</button></div>
@@ -597,51 +613,114 @@ nav button svg{width:23px;height:23px}
    ============================================================ */
 const STORE_KEY = 'roamize.v1';
 
-const DEFAULT_DATA = {
-  version: 1,
-  settings: { apiKey: '', userName: 'Nathan', logoTaps: 0 },
-  activeTripId: 'northshore26',
-  trips: [{
-    id: 'northshore26',
-    name: 'North Shore, MN',
-    emoji: '🌲',
-    start: '2026-07-27',
-    end: '2026-08-01',
-    base: { label: 'Airbnb', address: 'Add your Airbnb address in Details', lat: 47.0227, lng: -91.6704 },
-    logistics: [
-      { id: 'l1', type: 'flight', title: 'Flight out', fields: { Airline: '', 'Flight #': '', Departs: '', Arrives: '', Confirmation: '' }, notes: '' },
-      { id: 'l2', type: 'car',    title: 'Rental car', fields: { Company: '', 'Pickup': '', 'Drop-off': '', Confirmation: '' }, notes: '' },
-      { id: 'l3', type: 'stay',   title: 'Airbnb', fields: { Address: '', 'Check-in': '', 'Check-out': '', 'Door code': '' }, notes: '' }
+/* ---------- the trip: New England, October 2026 ----------
+   Everything region-specific lives in trip.region so a future trip
+   (Moab, the Palouse, wherever) just gets its own block. Nothing
+   below the data layer should name a place. */
+const NEW_ENGLAND_TRIP = {
+  id: 'newengland26',
+  name: 'New England Fall',
+  emoji: '🍁',
+  start: '2026-10-12',
+  end: '2026-10-16',
+  base: { label: 'Airbnb · Intervale', address: '34 Hemlock Rd, Intervale, NH 03845', lat: 44.1113, lng: -71.1417 },
+  region: {
+    label: 'Mount Washington Valley',
+    /* towns for the AQI / conditions strip — S → N through the valley, plus the VT and ME sides */
+    towns: [
+      { name: 'North Conway',   lat: 44.0537, lng: -71.1284 },
+      { name: 'Jackson',        lat: 44.1445, lng: -71.1856 },
+      { name: 'Crawford Notch', lat: 44.2178, lng: -71.4109 },
+      { name: 'Lincoln (Kanc)', lat: 44.0470, lng: -71.6704 },
+      { name: 'Bethel, ME',     lat: 44.4045, lng: -70.7906 },
+      { name: 'St. Johnsbury, VT', lat: 44.4192, lng: -72.0151 }
     ],
-    pins: [
-      { id: 'p1', name: 'Split Rock Lighthouse', lat: 47.2003, lng: -91.3673, note: 'Classic North Shore shot — sunrise side light. State park: check drone permit rules.', type: 'shoot', done: false },
-      { id: 'p2', name: 'Palisade Head',         lat: 47.3205, lng: -91.2100, note: '350ft cliffs over Superior. Epic drone pullback territory.', type: 'shoot', done: false },
-      { id: 'p3', name: 'Tettegouche High Falls', lat: 47.3397, lng: -91.1967, note: 'Tallest falls fully in MN. Short hike in.', type: 'shoot', done: false },
-      { id: 'p4', name: 'Gooseberry Falls',      lat: 47.1397, lng: -91.4695, note: 'Multi-tier falls, easy access. Goes early to beat crowds.', type: 'shoot', done: false },
-      { id: 'p5', name: 'Aerial Lift Bridge',    lat: 46.7787, lng: -92.0928, note: 'Duluth icon. Time-lapse of a bridge lift + ship entry?', type: 'shoot', done: false },
-      { id: 'p6', name: 'Grand Marais Harbor',   lat: 47.7455, lng: -90.3343, note: 'Artsy harbor town. Lighthouse walk + food stop.', type: 'shoot', done: false }
+    /* Scout reads these every morning for the foliage tracker. Official state reports, updated weekly (NH twice a week). */
+    foliageSources: [
+      { state: 'NH', name: 'Visit NH foliage report', url: 'https://www.visitnh.gov/plan-your-trip/fall/foliage-report', near: 'White Mountains' },
+      { state: 'VT', name: 'Vermont foliage report',   url: 'https://vermontvacation.com/vermont-seasons/fall/fall-foliage-report/', near: 'Northeast Kingdom' },
+      { state: 'ME', name: 'Maine foliage report',     url: 'https://www.maine.gov/dacf/mfs/projects/fall_foliage/report/index.shtml', near: 'Western Maine' }
     ],
-    schedule: {
-      '2026-07-27': [{ id: 'a1', time: '', title: 'Arrive, settle into Airbnb, scout sunset spot' }]
-    },
-    gear: [
-      { name: 'Drone + charged batteries (all of them)', done: false },
-      { name: 'ND filters', done: false },
-      { name: 'SD cards — formatted', done: false },
-      { name: 'Camera + lenses', done: false },
-      { name: 'Chargers / power bank', done: false },
-      { name: 'Layers — Superior makes its own weather', done: false }
+    nearRegion: 'White Mountains',
+    droneNotes: 'White Mountain National Forest is national FOREST, not a national park: recreational drone flight is generally allowed outside designated Wilderness areas (no drones in Wilderness). NH state parks: drones need written permission from the park manager, so launch from outside park boundaries like last trip. Vermont state parks prohibit drones. Maine state parks require a permit. Acadia NP and all national parks: no. Mount Washington summit and the Cog are heavily trafficked, treat as no-go. Watch Class D around Portland Jetport and Class C/D near Manchester and Burlington; the valley itself is mostly Class G.',
+    guides: [
+      { title: 'NH foliage report (twice weekly)', url: 'https://www.visitnh.gov/plan-your-trip/fall/foliage-report', source: 'Visit NH', sub: 'Regional % color change, updated twice a week through the season. The White Mountains row is your base.' },
+      { title: 'Vermont foliage report', url: 'https://vermontvacation.com/vermont-seasons/fall/fall-foliage-report/', source: 'Vermont Tourism', sub: 'State foresters file this weekly with best-bet drives. The Northeast Kingdom is the closest VT color to base.' },
+      { title: 'Maine weekly foliage report', url: 'https://www.maine.gov/dacf/mfs/projects/fall_foliage/report/index.shtml', source: 'Maine Forest Service', sub: 'Zone-by-zone % color and leaf drop. Western Maine (Bethel, Rangeley) is the zone within reach.' },
+      { title: 'Higher Summits forecast', url: 'https://mountwashington.org/experience-the-weather/higher-summit-forecast.aspx', source: 'Mount Washington Observatory', sub: 'Wind and cloud deck above the valley. If the summits are socked in, the notches usually have fog worth chasing.' },
+      { title: 'Kancamagus Highway guide', url: 'https://www.kancamagushighway.com/', source: 'Kancamagus Highway', sub: 'Overlooks and pull-offs along the 34-mile scenic byway west of Conway, with parking notes.' },
+      { title: 'White Mountains attractions', url: 'https://www.visitwhitemountains.com/things-to-do/', source: 'Visit White Mountains', sub: 'The regional guide for notches, covered bridges, and scenic drives around the valley.' }
     ]
-  }]
+  },
+  logistics: [
+    { id: 'l1', type: 'flight', title: 'Flight out · Mon Oct 12', fields: { Airline: 'American', 'Flight #': 'AA 1480 → AA 5129', Departs: 'MCI 11:56 AM', Arrives: 'PWM 6:56 PM (via PHL, 5:21 PM)', Confirmation: 'HCMLHU' }, notes: 'Lands after dark. ~1 hr 30 min drive to Intervale, plan on groceries in Portland or North Conway.' },
+    { id: 'l2', type: 'flight', title: 'Flight home · Fri Oct 16', fields: { Airline: 'American', 'Flight #': 'AA 5202 → AA 5085', Departs: 'PWM 10:52 AM', Arrives: 'MCI 3:55 PM (via DCA, 1:56 PM)', Confirmation: 'HCMLHU' }, notes: 'Out the door by ~7:30 AM. Last shoot is Thursday sunset.' },
+    { id: 'l3', type: 'car',    title: 'Rental car', fields: { Company: '', 'Pickup': 'PWM', 'Drop-off': 'PWM', Confirmation: '' }, notes: 'Confirm the class you booked is the class you get this time.' },
+    { id: 'l4', type: 'stay',   title: 'Airbnb · Intervale', fields: { Address: '34 Hemlock Rd, Intervale, NH 03845', 'Check-in': '', 'Check-out': '', 'Door code': '' }, notes: '' }
+  ],
+  pins: [],
+  schedule: {
+    '2026-10-12': [{ id: 'a1', time: '6:56 PM', title: 'Land PWM, drive up to Intervale (~1.5 hr)' }],
+    '2026-10-16': [{ id: 'a2', time: '7:30 AM', title: 'Checkout, drive to PWM for the 10:52 flight' }]
+  },
+  gear: [
+    { name: 'Drone + every battery, charged', done: false },
+    { name: 'ND filters (actually use them this time)', done: false },
+    { name: 'SD cards, formatted', done: false },
+    { name: 'RC screen charged + spare joystick knob', done: false },
+    { name: 'Osmo Pocket + car mount (job: one full overnight timelapse per night)', done: false },
+    { name: 'Hand warmers for batteries, gloves, layers', done: false },
+    { name: 'Camera + lenses', done: false },
+    { name: 'Chargers / power bank', done: false }
+  ]
+};
+
+/* Field rules: global Scout memory, carried into EVERY trip. Seeded from the North Shore debrief. */
+const SEED_MEMORY = [
+  'Day template: shoot morning, home to offload and rest midday, back out for sunset. It worked, keep it.',
+  'Drive radius: 45 min from base. Anything further needs a real reason. Driving cost the North Shore trip a full point.',
+  'Pre-scout 3 or 4 anchors deeply (parking, launch point, line of sight, backup) rather than 12 shallowly. Leave the rest blank on purpose.',
+  'Best light was atmospheric, not golden: fog, overcast, moody cloud. Plan around weather windows more than clock windows.',
+  'Arrive without reference images. No recreating other people\'s shots.',
+  'Launch from outside park boundaries by default. Fewer signs, fewer permits, best spots were off the main road anyway.',
+  'Commit rule: once set up, give it one more battery or one more hour than feels necessary. Every regret last trip was not staying or not going further.',
+  'One battery per session, charge everything every night.',
+  'Osmo Pocket gets one defined job: a full sunset-to-sunrise timelapse at base, run all the way through.',
+  'Shoot D-Log for the whole trip.',
+  'Unplanned spots near base outperformed the famous ones. Some of the best material is within 15 min of where I sleep.',
+  'Navigation is Apple Maps. Roamize is for the plan, the shoot list, and conditions.'
+];
+
+const DEFAULT_DATA = {
+  version: 2,
+  settings: { apiKey: '', userName: 'Nathan', logoTaps: 0 },
+  memory: SEED_MEMORY.slice(),
+  activeTripId: NEW_ENGLAND_TRIP.id,
+  trips: [JSON.parse(JSON.stringify(NEW_ENGLAND_TRIP))]
 };
 
 let DB = load();
 function load() {
+  let db = null;
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) db = JSON.parse(raw);
   } catch (e) {}
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  if (!db) db = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  return migrate(db);
+}
+/* one-time upgrades for data that already lives on a device (or in the Gist) */
+function migrate(db) {
+  let changed = false;
+  if (!Array.isArray(db.memory)) { db.memory = SEED_MEMORY.slice(); changed = true; }
+  if (!db.trips.some(t => t.id === NEW_ENGLAND_TRIP.id)) {
+    db.trips.unshift(JSON.parse(JSON.stringify(NEW_ENGLAND_TRIP)));
+    db.activeTripId = NEW_ENGLAND_TRIP.id; changed = true;
+  }
+  db.trips.forEach(t => { if (!t.region) { t.region = { label: t.name, towns: [], foliageSources: [], guides: [], droneNotes: '' }; changed = true; } });
+  if (db.version !== 2) { db.version = 2; changed = true; }
+  if (changed) { try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) {} }
+  return db;
 }
 function save(bump = true) {
   if (bump) DB.updatedAt = Date.now();
@@ -727,7 +806,7 @@ async function syncNow() {
       if (rAt > lAt) {
         if (confirm('Cloud copy is newer (from your other device). Load it here?')) {
           const keep = { apiKey: DB.settings.apiKey, ghToken: DB.settings.ghToken, gistId: DB.settings.gistId, ytKey: DB.settings.ytKey };
-          DB = remote; DB.settings = { ...remote.settings, ...keep };
+          DB = migrate(remote); DB.settings = { ...DB.settings, ...keep };
           save(false); renderAll(); toast('Pulled latest ⬇');
         }
       } else if (lAt > rAt) {
@@ -787,7 +866,8 @@ function createTrip() {
   const t = {
     id: uid(), name, emoji: document.getElementById('ntEmoji').value.trim() || '📍',
     start, end,
-    base: { label: 'Home base', address: '', lat: 44.9778, lng: -93.2650 },
+    base: { label: 'Home base', address: '', lat: 39.0997, lng: -94.5786 },
+    region: { label: name, towns: [], foliageSources: [], guides: [], droneNotes: '' },
     logistics: [
       { id: uid(), type: 'flight', title: 'Flight out', fields: { Airline:'', 'Flight #':'', Departs:'', Arrives:'', Confirmation:'' }, notes: '' },
       { id: uid(), type: 'car', title: 'Rental car', fields: { Company:'', Pickup:'', 'Drop-off':'', Confirmation:'' }, notes: '' },
@@ -812,6 +892,8 @@ function settingsForm() {
       <input id="setKey" type="password" placeholder="sk-ant-…" value="${esc(DB.settings.apiKey)}"></div>
     <div class="field"><label>Scout's personality (blank = default)</label>
       <textarea id="setPersona" rows="6" placeholder="${esc(DEFAULT_PERSONA)}">${esc(DB.settings.persona || '')}</textarea></div>
+    <div class="field"><label>Scout's model (blank = ${SCOUT_MODEL}; falls back automatically if retired)</label>
+      <input id="setModel" placeholder="${SCOUT_MODEL}" value="${esc(DB.settings.model || '')}" autocapitalize="off" autocorrect="off"></div>
     <div class="field"><label>GitHub token — powers the sync button</label>
       <input id="setGh" type="password" placeholder="ghp_… (classic token, gist scope only)" value="${esc(DB.settings.ghToken || '')}"></div>
     <div class="field"><label>YouTube API key — optional, adds fresh videos to Explore</label>
@@ -825,11 +907,12 @@ function settingsForm() {
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(this)">
     <div style="height:10px"></div>
     <button class="btn ghost danger" onclick="deleteTrip('${trip().id}')">Delete current trip</button>
-    <p style="font-size:12px;color:var(--muted);margin-top:16px;text-align:center">Roamize v1 · built with Claude · data lives in your browser</p>`);
+    <p style="font-size:12px;color:var(--muted);margin-top:16px;text-align:center">Roamize v2 · built with Claude · data lives in your browser</p>`);
 }
 function saveSettings() {
   DB.settings.apiKey = document.getElementById('setKey').value.trim();
   DB.settings.persona = document.getElementById('setPersona').value.trim();
+  DB.settings.model = document.getElementById('setModel').value.trim();
   DB.settings.ghToken = document.getElementById('setGh').value.trim();
   DB.settings.ytKey = document.getElementById('setYt').value.trim();
   save(); closeSheet(); toast('Saved');
@@ -843,7 +926,7 @@ function importData(input) {
   const f = input.files[0]; if (!f) return;
   const r = new FileReader();
   r.onload = () => {
-    try { const d = JSON.parse(r.result); if (!d.trips) throw 0; DB = d; save(); closeSheet(); renderAll(); toast('Imported ✓'); }
+    try { const d = JSON.parse(r.result); if (!d.trips) throw 0; DB = migrate(d); save(); closeSheet(); renderAll(); toast('Imported ✓'); }
     catch (e) { toast('Not a valid Roamize backup'); }
   };
   r.readAsText(f);
@@ -890,8 +973,42 @@ function renderDetails() {
       <div class="kv"><span class="k">Address</span><span class="v">${esc(t.base.address) || '—'}</span></div>
       <div style="margin-top:8px"><button class="btn ghost small" onclick="editBaseForm()">Edit home base</button></div>
     </div>
+    <div class="section-label">Region &amp; drone rules</div>
+    <div class="card">
+      <div class="kv"><span class="k">Region</span><span class="v">${esc(region().label)}</span></div>
+      <div class="kv"><span class="k">Foliage row</span><span class="v">${esc(region().nearRegion || '—')}</span></div>
+      <div class="kv"><span class="k">Towns tracked</span><span class="v">${region().towns.length ? region().towns.map(x => esc(x.name)).join(', ') : 'base + pins'}</span></div>
+      ${region().droneNotes ? `<div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5">${esc(region().droneNotes)}</div>` : ''}
+      <div style="margin-top:8px"><button class="btn ghost small" onclick="editRegionForm()">Edit region</button></div>
+    </div>
     ${t.gear && t.gear.length ? `<div class="section-label">Gear check <button onclick="addGearForm()">+ Add</button></div><div class="card">${gear}</div>` : ''}
   `;
+}
+/* region = everything place-specific for a trip. Scout, the forecast, the foliage tracker and the feed all read it. */
+function region() {
+  const t = trip();
+  return t.region = t.region || { label: t.name, towns: [], foliageSources: [], guides: [], droneNotes: '' };
+}
+function editRegionForm() {
+  const r = region();
+  openSheet(`<h2>Region &amp; rules</h2>
+    <div class="field"><label>Region label</label><input id="erLabel" value="${esc(r.label)}"></div>
+    <div class="field"><label>Foliage report row that matches base (e.g. White Mountains)</label><input id="erNear" value="${esc(r.nearRegion || '')}"></div>
+    <div class="field"><label>Towns for the conditions strip, one per line: Name, lat, lng</label>
+      <textarea id="erTowns" rows="5">${esc(r.towns.map(x => `${x.name}, ${x.lat}, ${x.lng}`).join('\n'))}</textarea></div>
+    <div class="field"><label>Foliage sources, one per line: STATE | Name | URL | matching region row</label>
+      <textarea id="erFol" rows="4">${esc((r.foliageSources || []).map(x => `${x.state} | ${x.name} | ${x.url} | ${x.near || ''}`).join('\n'))}</textarea></div>
+    <div class="field"><label>Drone rules Scout should know (plain text)</label><textarea id="erRules" rows="5">${esc(r.droneNotes || '')}</textarea></div>
+    <button class="btn" onclick="saveRegion()">Save</button>`);
+}
+function saveRegion() {
+  const r = region();
+  r.label = document.getElementById('erLabel').value.trim() || r.label;
+  r.nearRegion = document.getElementById('erNear').value.trim();
+  r.towns = document.getElementById('erTowns').value.split('\n').map(l => l.split(',').map(s => s.trim())).filter(a => a.length >= 3 && !isNaN(+a[1]) && !isNaN(+a[2])).map(a => ({ name: a[0], lat: +a[1], lng: +a[2] }));
+  r.foliageSources = document.getElementById('erFol').value.split('\n').map(l => l.split('|').map(s => s.trim())).filter(a => a.length >= 3 && /^https?:/.test(a[2])).map(a => ({ state: a[0], name: a[1], url: a[2], near: a[3] || '' }));
+  r.droneNotes = document.getElementById('erRules').value.trim();
+  save(); closeSheet(); renderAll(); toast('Region saved');
 }
 function toggleGear(i) { trip().gear[i].done = !trip().gear[i].done; save(); renderDetails();
   if (trip().gear.every(g => g.done)) { confettiBurst(); toast('Gear locked. Go make something great 🎬'); } }
@@ -1081,20 +1198,65 @@ function renderMap() {
     MARKERS.push(m); pts.push([p.lat, p.lng]);
   });
   if (pts.length > 1) MAP.fitBounds(pts, { padding: [36, 36] });
-  else MAP.setView(pts[0] || [46.78, -92.1], 9);
+  else MAP.setView(pts[0] || [44.11, -71.14], 10);
 }
 function popupHtml(p) {
   const dist = haversine(trip().base, p);
   const isShoot = (p.type || 'shoot') === 'shoot';
   return `<b>${pinType(p).emoji} ${esc(p.name)}</b><br>
     <span style="color:#8b95ab;font-size:12.5px">${esc(p.note || '')}${p.note ? '<br>' : ''}${dist} from base</span>
+    ${p.launch ? `<div style="font-size:12.5px;margin-top:5px">🚁 <b>Launch:</b> ${esc(p.launch)}</div>` : ''}
+    ${p.parking ? `<div style="font-size:12.5px;margin-top:3px">🅿️ <b>Parking:</b> ${esc(p.parking)}</div>` : ''}
     <div class="popup-actions">
       <button onclick="togglePin('${p.id}')">${p.done ? '↺ Undo' : (isShoot ? '✓ Shot it' : '✓ Done')}</button>
+      <button onclick="editPinForm('${p.id}')">✎ Edit</button>
       <button onclick="peekPhotos('${p.id}')">📸 Peek</button>
       ${isShoot ? `<button onclick="droneCheck('${p.id}')">🚁 Wind</button>` : ''}
       <button onclick="navTo(${p.lat},${p.lng})">🧭 Go</button>
       <button onclick="removePin('${p.id}')" style="color:var(--bad)">✕</button>
     </div>`;
+}
+/* ---------- edit a pin: name, note, and the two things that actually cost time last trip ---------- */
+function editPinForm(id) {
+  const p = trip().pins.find(x => x.id === id); if (!p) return;
+  openSheet(`<h2>${pinType(p).emoji} ${esc(p.name)}</h2>
+    <div class="field"><label>Name</label><input id="epName" value="${esc(p.name)}"></div>
+    ${typeSelectHtml(p.type || 'shoot')}
+    <div class="field"><label>Note / shot idea</label><input id="epNote" value="${esc(p.note || '')}"></div>
+    <div class="field"><label>🚁 Launch point (where the bird goes up, line of sight, what to avoid)</label><textarea id="epLaunch" rows="2">${esc(p.launch || '')}</textarea></div>
+    <div class="field"><label>🅿️ Parking (pull-off, lot, how far the walk is)</label><textarea id="epPark" rows="2">${esc(p.parking || '')}</textarea></div>
+    <div class="field-row">
+      <div class="field"><label>Latitude</label><input id="epLat" type="number" step="any" value="${p.lat}"></div>
+      <div class="field"><label>Longitude</label><input id="epLng" type="number" step="any" value="${p.lng}"></div>
+    </div>
+    <button class="btn" onclick="savePinEdit('${id}')">Save</button>`);
+}
+function savePinEdit(id) {
+  const p = trip().pins.find(x => x.id === id); if (!p) return;
+  p.name = document.getElementById('epName').value.trim() || p.name;
+  const type = document.getElementById('qpType')?.value; if (PIN_TYPES[type]) p.type = type;
+  p.note = document.getElementById('epNote').value.trim();
+  p.launch = document.getElementById('epLaunch').value.trim();
+  p.parking = document.getElementById('epPark').value.trim();
+  p.lat = parseFloat(document.getElementById('epLat').value) || p.lat;
+  p.lng = parseFloat(document.getElementById('epLng').value) || p.lng;
+  save(); closeSheet(); renderHome(); toast('Saved');
+}
+/* ---------- 📍 Capture: log an unplanned find in ten seconds, from wherever you're standing ---------- */
+document.getElementById('captureBtn').addEventListener('click', captureHere);
+function captureHere() {
+  if (!navigator.geolocation) return toast('No location on this device');
+  toast('Getting a fix…');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = +pos.coords.latitude.toFixed(5), lng = +pos.coords.longitude.toFixed(5);
+    openSheet(`<h2>📍 Capture this spot</h2>
+      <p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">${lat}, ${lng} · ${haversine(trip().base, { lat, lng })} from base. Name it and go, fill in the rest tonight.</p>
+      <div class="field"><label>Name</label><input id="qpName" placeholder="Foggy pond off Rt 302" autofocus></div>
+      ${typeSelectHtml('shoot')}
+      <div class="field"><label>Note (optional)</label><input id="qpNote" placeholder="What made you stop"></div>
+      <button class="btn" onclick="createPin(${lat},${lng},true)">Log it</button>`);
+    setTimeout(() => document.getElementById('qpName')?.focus(), 150);
+  }, () => toast('No location fix. Long-press the map instead.'), { timeout: 10000, maximumAge: 30000, enableHighAccuracy: true });
 }
 
 /* ---------- 📸 Peek: real photos near a pin (Wikimedia Commons, free) ---------- */
@@ -1164,26 +1326,28 @@ function quickAddPin(latlng) {
 }
 function addSpotSheet(defType) {
   openSheet(`<h2>${defType === 'shoot' ? 'Add spot' : 'Add place'}</h2>
-    <div class="field"><label>Name</label><input id="qpName" placeholder="${defType === 'shoot' ? 'Palisade Head' : 'World’s Best Donuts'}"></div>
+    <div class="field"><label>Name</label><input id="qpName" placeholder="${defType === 'shoot' ? 'Crawford Notch overlook' : 'Frontside Coffee Roasters'}"></div>
     ${typeSelectHtml(defType)}
     <div class="field"><label>Note</label><input id="qpNote" placeholder="${defType === 'shoot' ? 'Why it’s worth shooting' : 'Why it’s worth the stop'}"></div>
     <div class="field-row">
-      <div class="field"><label>Latitude</label><input id="qpLat" type="number" step="any" placeholder="47.32"></div>
-      <div class="field"><label>Longitude</label><input id="qpLng" type="number" step="any" placeholder="-91.21"></div>
+      <div class="field"><label>Latitude</label><input id="qpLat" type="number" step="any" placeholder="44.11"></div>
+      <div class="field"><label>Longitude</label><input id="qpLng" type="number" step="any" placeholder="-71.14"></div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Or long-press anywhere on the map to drop a pin there.</p>
     <button class="btn" onclick="createPin()">Add it</button>`);
 }
 document.getElementById('addPinBtn').addEventListener('click', () => addSpotSheet('shoot'));
 document.getElementById('addPlaceBtn').addEventListener('click', () => addSpotSheet('food'));
-function createPin(lat, lng) {
+function createPin(lat, lng, captured) {
   const name = document.getElementById('qpName').value.trim(); if (!name) return toast('Give it a name');
   lat = lat ?? parseFloat(document.getElementById('qpLat')?.value);
   lng = lng ?? parseFloat(document.getElementById('qpLng')?.value);
   if (isNaN(lat) || isNaN(lng)) return toast('Coordinates needed — or long-press the map');
   const type = document.getElementById('qpType')?.value || 'shoot';
-  trip().pins.push({ id: uid(), name, lat, lng, note: document.getElementById('qpNote').value.trim(), type: PIN_TYPES[type] ? type : 'shoot', done: false });
-  save(); closeSheet(); renderHome(); toast('Pinned 📍');
+  const p = { id: uid(), name, lat, lng, note: document.getElementById('qpNote').value.trim(), type: PIN_TYPES[type] ? type : 'shoot', done: false, launch: '', parking: '' };
+  if (captured) { p.found = new Date().toISOString(); p.parking = 'Where the car is right now'; }
+  trip().pins.push(p);
+  save(); closeSheet(); renderHome(); toast(captured ? 'Logged. Now go shoot it 📍' : 'Pinned 📍');
 }
 function renderPinList() {
   const t = trip();
@@ -1192,8 +1356,8 @@ function renderPinList() {
     <div class="pin-item">
       <span class="emoji" style="cursor:pointer" onclick="togglePin('${p.id}')">${p.done ? '✅' : '📷'}</span>
       <div class="info" style="cursor:pointer" onclick="flyTo('${p.id}')">
-        <div class="name ${p.done ? 'done' : ''}">${esc(p.name)}</div>
-        <div class="note">${esc(p.note || haversine(t.base, p) + ' from base')}</div>
+        <div class="name ${p.done ? 'done' : ''}">${esc(p.name)} ${p.found ? '<span title="captured in the field">✨</span>' : ''}</div>
+        <div class="note">${haversine(t.base, p)} · ${p.launch && p.parking ? '<span style="color:var(--good)">scouted ✓</span>' : `<span style="color:var(--warn)">${p.launch ? 'no parking notes' : p.parking ? 'no launch notes' : 'not scouted'}</span>`}${p.note ? ' · ' + esc(p.note) : ''}</div>
       </div>
       <span class="wind-chip" id="wind-${p.id}" style="background:var(--surface-2);color:var(--muted)">…</span>
     </div>`).join('')
@@ -1244,12 +1408,53 @@ function renderSchedule() {
       </div>`).join('');
     return `<div class="day">
       <div class="day-head">
-        <span class="d">${fmtDate(dt, { weekday: 'long' })}<small>${fmtDate(dt, { month: 'short', day: 'numeric' })}</small></span>
+        <span class="d">${fmtDate(dt, { weekday: 'long' })}<small>${fmtDate(dt, { month: 'short', day: 'numeric' })}</small><span class="wsc" id="wsc-${d}"></span></span>
         <span><button class="add-anchor" onclick="addRouteForm('${d}')">+ route</button>&nbsp;&nbsp;<button class="add-anchor" onclick="addAnchorForm('${d}')">+ anchor</button></span>
       </div>
       ${items || '<div class="open-day">Open — room for spontaneity ✨</div>'}
     </div>`;
   }).join('');
+  windshieldCheck();
+}
+
+/* ---------- 🚗 Windshield check: how much of each day is driving? ----------
+   Matches a day's anchors to pins (by id, or by name), routes base → stops → base
+   on OSRM, and flags days where the drive eats the light. */
+const WS_CACHE = {};
+function dayPins(d) {
+  const t = trip();
+  const out = [];
+  (t.schedule[d] || []).forEach(a => {
+    const p = a.pinId ? t.pins.find(x => x.id === a.pinId)
+      : t.pins.find(x => x.name.length > 3 && (a.title || '').toLowerCase().includes(x.name.toLowerCase()));
+    if (p && !out.includes(p)) out.push(p);
+  });
+  return out;
+}
+function fmtDur(sec) { return sec >= 3600 ? Math.floor(sec / 3600) + 'h ' + Math.round(sec % 3600 / 60) + 'm' : Math.round(sec / 60) + ' min'; }
+async function windshieldCheck() {
+  const t = trip(), b = t.base;
+  for (const d of tripDays(t)) {
+    const el = document.getElementById('wsc-' + d); if (!el) continue;
+    const pins = dayPins(d);
+    if (!pins.length) { el.innerHTML = ''; continue; }
+    const key = pins.map(p => p.id).sort().join(',') + '|' + b.lat.toFixed(3) + ',' + b.lng.toFixed(3);
+    let r = WS_CACHE[key];
+    if (!r) {
+      try {
+        const coords = [b, ...pins, b].map(s => `${s.lng},${s.lat}`).join(';');
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
+        const data = await res.json();
+        if (data.code !== 'Ok' || !data.routes?.length) throw 0;
+        r = { sec: data.routes[0].duration, mi: data.routes[0].distance / 1609.34, n: pins.length };
+        WS_CACHE[key] = r;
+      } catch (e) { el.innerHTML = ''; continue; }
+    }
+    const h = r.sec / 3600;
+    const col = h < 2 ? 'var(--good)' : h < 3.5 ? 'var(--warn)' : 'var(--bad)';
+    const word = h < 2 ? '' : h < 3.5 ? ' · long day' : ' · too much road';
+    el.innerHTML = `<span class="wind-chip" style="background:var(--surface-2);color:${col};margin-left:8px" title="${r.n} stop${r.n === 1 ? '' : 's'} + back to base, ${Math.round(r.mi)} mi">🚗 ${fmtDur(r.sec)}${word}</span>`;
+  }
 }
 function addRouteForm(date) {
   openSheet(`<h2>🧭 Save a route · ${fmtDate(parseDate(date), { weekday: 'long', month: 'short', day: 'numeric' })}</h2>
@@ -1269,15 +1474,18 @@ function createRoute(date) {
   save(); closeSheet(); renderSchedule(); toast('Route saved 🧭');
 }
 function addAnchorForm(date) {
+  const pins = trip().pins;
   openSheet(`<h2>${fmtDate(parseDate(date), { weekday: 'long', month: 'short', day: 'numeric' })}</h2>
-    <div class="field"><label>What (keep it loose)</label><input id="anTitle" placeholder="Sunrise at Split Rock"></div>
+    ${pins.length ? `<div class="field"><label>From your pins (optional, powers the drive check)</label><select id="anPin" onchange="if(this.value){const p=trip().pins.find(x=>x.id===this.value);document.getElementById('anTitle').value=p?p.name:''}"><option value="">— free-form —</option>${pins.map(p => `<option value="${p.id}">${pinType(p).emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}
+    <div class="field"><label>What (keep it loose)</label><input id="anTitle" placeholder="Fog run through Crawford Notch"></div>
     <div class="field"><label>Time — optional</label><input id="anTime" placeholder="6:30 AM"></div>
     <button class="btn" onclick="createAnchor('${date}')">Anchor it</button>`);
 }
 function createAnchor(date) {
   const title = document.getElementById('anTitle').value.trim(); if (!title) return toast('What are you anchoring?');
   const t = trip();
-  (t.schedule[date] = t.schedule[date] || []).push({ id: uid(), title, time: document.getElementById('anTime').value.trim() });
+  const pinId = document.getElementById('anPin')?.value || undefined;
+  (t.schedule[date] = t.schedule[date] || []).push({ id: uid(), title, time: document.getElementById('anTime').value.trim(), pinId });
   save(); closeSheet(); renderSchedule();
 }
 function removeAnchor(date, id) {
@@ -1296,10 +1504,18 @@ async function fetchWx(lat, lng) {
   if (wxCache[key] && Date.now() - wxCache[key].at < 30 * 60 * 1000) return wxCache[key].data;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&current=wind_speed_10m,wind_gusts_10m,cloud_cover,temperature_2m,precipitation` +
-    `&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=2`;
+    `&hourly=wind_speed_120m&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=2`;
   const res = await fetch(url); const data = await res.json();
   wxCache[key] = { at: Date.now(), data };
   return data;
+}
+/* wind at ~400 ft AGL (Open-Meteo's 120 m level) for the current hour — what the drone actually feels */
+function windAloft(wx) {
+  try {
+    const now = new Date(), h = now.getHours();
+    const i = wx.hourly.time.findIndex(t => t.slice(0, 10) === isoDate(now) && +t.slice(11, 13) === h);
+    return i >= 0 ? wx.hourly.wind_speed_120m[i] : null;
+  } catch (e) { return null; }
 }
 function windVerdict(mph, gust) {
   if (mph <= 11 && gust <= 17) return { label: mph.toFixed(0) + ' mph', bg: 'rgba(95,185,138,.18)', fg: 'var(--good)', word: 'Send it 🚁' };
@@ -1324,12 +1540,15 @@ async function renderGolden() {
     const sr = new Date(wx.daily.sunrise[0]), ss = new Date(wx.daily.sunset[0]);
     const fmt = d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const gStart = new Date(ss.getTime() - 55 * 60000);
-    const v = windVerdict(wx.current.wind_speed_10m, wx.current.wind_gusts_10m);
+    const aloft = windAloft(wx);
+    const v = windVerdict(Math.max(wx.current.wind_speed_10m, aloft ?? 0), wx.current.wind_gusts_10m);
+    const fol = foliageState().report?.data;
     row.innerHTML = `
+      ${fol ? `<span class="chip" style="background:${foliageColor(fol.nearPct).bg};color:${foliageColor(fol.nearPct).fg};cursor:pointer" onclick="switchTab('smoke')">🍁 ${fol.nearPct}% · ${esc(fol.stage || '')}</span>` : ''}
       <span class="chip">🌅 ${fmt(sr)}</span>
       <span class="chip">✨ Golden hr ${fmt(gStart)}</span>
       <span class="chip">🌇 ${fmt(ss)}</span>
-      <span class="chip" style="background:${v.bg};color:${v.fg}">🚁 ${v.word}</span>
+      <span class="chip" style="background:${v.bg};color:${v.fg}">🚁 ${v.word}${aloft != null ? ' · ' + Math.round(aloft) + ' aloft' : ''}</span>
       <span class="chip">☁️ ${wx.current.cloud_cover}% · ${Math.round(wx.current.temperature_2m)}°</span>`;
   } catch (e) { row.innerHTML = ''; }
 }
@@ -1337,13 +1556,18 @@ async function droneCheck(pinId) {
   const p = trip().pins.find(x => x.id === pinId); if (!p) return;
   try {
     const wx = await fetchWx(p.lat, p.lng);
-    const v = windVerdict(wx.current.wind_speed_10m, wx.current.wind_gusts_10m);
+    const aloft = windAloft(wx);
+    const v = windVerdict(Math.max(wx.current.wind_speed_10m, aloft ?? 0), wx.current.wind_gusts_10m);
+    const temp = wx.current.temperature_2m;
     openSheet(`<h2>🚁 ${esc(p.name)}</h2>
       <div class="card" style="margin-bottom:10px">
-        <div class="kv"><span class="k">Wind</span><span class="v" style="color:${v.fg}">${wx.current.wind_speed_10m.toFixed(0)} mph, gusting ${wx.current.wind_gusts_10m.toFixed(0)}</span></div>
+        <div class="kv"><span class="k">Wind at ground</span><span class="v">${wx.current.wind_speed_10m.toFixed(0)} mph, gusting ${wx.current.wind_gusts_10m.toFixed(0)}</span></div>
+        <div class="kv"><span class="k">Wind at ~400 ft</span><span class="v" style="color:${v.fg}">${aloft != null ? Math.round(aloft) + ' mph' : '—'}</span></div>
         <div class="kv"><span class="k">Verdict</span><span class="v" style="color:${v.fg};font-weight:700">${v.word}</span></div>
         <div class="kv"><span class="k">Cloud cover</span><span class="v">${wx.current.cloud_cover}%</span></div>
-        <div class="kv"><span class="k">Temp</span><span class="v">${Math.round(wx.current.temperature_2m)}°F</span></div>
+        <div class="kv"><span class="k">Temp</span><span class="v">${Math.round(temp)}°F${temp < 40 ? ' <span style="color:var(--warn)">· keep batteries warm, expect shorter flights</span>' : ''}</span></div>
+        ${p.launch ? `<div class="kv"><span class="k">Launch</span><span class="v">${esc(p.launch)}</span></div>` : ''}
+        ${p.parking ? `<div class="kv"><span class="k">Parking</span><span class="v">${esc(p.parking)}</span></div>` : ''}
         <div class="kv"><span class="k">Precip</span><span class="v">${wx.current.precipitation}"</span></div>
         <div class="kv"><span class="k">Sunset</span><span class="v">${new Date(wx.daily.sunset[0]).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span></div>
       </div>
@@ -1355,7 +1579,7 @@ async function droneCheck(pinId) {
    EASTER EGG DEPT. 🥚
    ============================================================ */
 function confettiBurst() {
-  const bits = ['🎉','✨','🎊','📸','🚁','🌲'];
+  const bits = ['🎉','✨','🎊','📸','🚁','🍁'];
   for (let i = 0; i < 26; i++) {
     const s = document.createElement('span');
     s.className = 'confetti'; s.textContent = bits[i % bits.length];
@@ -1389,7 +1613,7 @@ function rollAnchor(pinId) {
   const days = tripDays(t);
   const target = days.includes(today) ? today : (openDays(t)[0] || days[0]);
   if (!target) return toast('No trip days to anchor to');
-  (t.schedule[target] = t.schedule[target] || []).push({ id: uid(), title: '🎲 ' + p.name, time: '' });
+  (t.schedule[target] = t.schedule[target] || []).push({ id: uid(), title: '🎲 ' + p.name, time: '', pinId: p.id });
   save(); closeSheet(); renderSchedule(); toast('Anchored. No backing out now.');
 }
 /* tap the logo 7 times… */
@@ -1428,7 +1652,36 @@ function renderAll() {
    EXPLORE — a trip-aware Claude, right in the app.
    Model + prompt are easy to tweak below.
    ============================================================ */
-const EXPLORE_MODEL = 'claude-haiku-4-5';   // cheap + fast; swap for a bigger model anytime
+/* Scout and the daily reports all run on the same model. Sonnet 5.5 is the current one;
+   if Anthropic retires it mid-trip the fallbacks kick in automatically (404 / not_found). */
+const SCOUT_MODEL     = 'claude-sonnet-5-5';
+const MODEL_FALLBACKS = ['claude-sonnet-5-5', 'claude-sonnet-5', 'claude-sonnet-4-6', 'claude-haiku-4-5'];
+async function callClaude({ system, messages, max_tokens = 1200 }) {
+  const models = [DB.settings.model || SCOUT_MODEL, ...MODEL_FALLBACKS.filter(m => m !== (DB.settings.model || SCOUT_MODEL))];
+  let lastErr = null;
+  for (const model of models) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': DB.settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ model, max_tokens, system, messages })
+    });
+    const data = await res.json();
+    if (data.error) {
+      lastErr = { status: res.status, message: data.error.message || 'unknown error' };
+      const gone = res.status === 404 || /not_found|model.*(not|un)supported|deprecated|retired/i.test(data.error.message || '');
+      if (gone) continue;                      // try the next model
+      throw lastErr;
+    }
+    if (model !== models[0]) { DB.settings.model = model; save(false); toast('Scout switched to ' + model); }
+    return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  }
+  throw lastErr || { status: 0, message: 'no model available' };
+}
 
 /* ============================================================
    SCOUT'S PERSONALITY — edit this freely, or override it
@@ -1454,27 +1707,33 @@ function persistChat() {
   save();
 }
 
+/* two memories: field rules travel with Nathan to every trip (DB.memory); trip notes stay with the trip */
+function globalMemory() { return DB.memory = DB.memory || []; }
 function memory() { const t = trip(); return t.memory = t.memory || []; }
 
 function systemPrompt() {
-  const t = trip();
+  const t = trip(), r = region();
+  const rules = globalMemory().map(m => '- ' + m).join('\n') || '(none yet)';
   const mem = memory().map(m => '- ' + m).join('\n') || '(nothing yet)';
   const open = openDays(t).map(d => fmtDate(parseDate(d), { weekday: 'long', month: 'short', day: 'numeric' })).join(', ') || 'none — every day has at least one anchor';
-  const pins = t.pins.map(p => `- ${pinType(p).emoji} [${p.type || 'shoot'}] ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})${p.done ? ' [done]' : ''}${p.note ? ' — ' + p.note : ''}`).join('\n') || '(no pins yet)';
+  const pins = t.pins.map(p => `- ${pinType(p).emoji} [${p.type || 'shoot'}] ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}) ${haversine(t.base, p)} from base${p.done ? ' [done]' : ''}${p.note ? ' — ' + p.note : ''}${p.launch ? ' | launch: ' + p.launch : ''}${p.parking ? ' | parking: ' + p.parking : ''}${!p.launch || !p.parking ? ' | NOT FULLY SCOUTED' : ''}`).join('\n') || '(no pins yet)';
   const sched = tripDays(t).map(d => {
     const a = (t.schedule[d] || []).map(x => (x.url ? '🧭 saved route: ' : '') + (x.time ? x.time + ' ' : '') + x.title).join('; ');
-    return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}`;
+    const ws = Object.entries(WS_CACHE).find(([k]) => k.startsWith(dayPins(d).map(p => p.id).sort().join(',') + '|') && dayPins(d).length);
+    return `- ${fmtDate(parseDate(d), { weekday: 'short', month: 'short', day: 'numeric' })}: ${a || 'OPEN'}${ws ? ` [drive: ${fmtDur(ws[1].sec)} round trip]` : ''}`;
   }).join('\n');
   const logi = t.logistics.map(l => {
     const f = Object.entries(l.fields).filter(([k, v]) => v).map(([k, v]) => k + ': ' + v).join(', ');
     return `- ${l.title}${f ? ' — ' + f : ''}${l.notes ? ' (note: ' + l.notes + ')' : ''}`;
   }).join('\n') || '(none entered)';
-  return `You are Scout, the built-in travel scout inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. Be concise and useful; short conversational paragraphs.
+  const fol = foliageState().report?.data;
+  const folLine = fol ? `FOLIAGE (Scout's tracker, pulled ${foliageState().report.date}): ${fol.nearPct}% color at ${fol.nearRegion || r.nearRegion || 'base'}, stage: ${fol.stage}. ${fol.summary || ''}${fol.bestDrive ? ' Best drive per the state reports: ' + fol.bestDrive : ''}${fol.peakEta ? ' Peak ETA near base: ' + fol.peakEta : ''}\nREGIONS: ${(fol.regions || []).map(x => `${x.name} (${x.state}) ${x.label || x.pct + '%'}`).join('; ')}` : 'FOLIAGE: tracker has not pulled yet (Forecast tab).';
+  return `You are Scout, the field producer inside Roamize — ${DB.settings.userName}'s personal trip app. He's a photographer/droner shooting solo content. You are NOT a general assistant: you know THIS trip cold and you answer from its data. Be concise and useful; short conversational paragraphs. If something needs research you don't have (a specific business's hours, a permit form), say so in one line rather than guessing.
 
 YOUR PERSONALITY:
 ${DB.settings.persona || DEFAULT_PERSONA}
 
-CURRENT TRIP: ${t.emoji} ${t.name}, ${t.start} to ${t.end}.
+CURRENT TRIP: ${t.emoji} ${t.name}, ${t.start} to ${t.end}. Region: ${r.label}.
 HOME BASE: ${t.base.label}${t.base.address ? ' at ' + t.base.address : ''} (${t.base.lat}, ${t.base.lng}).
 LOGISTICS (flights, car, stay — TREAT THESE AS HARD CONSTRAINTS):
 ${logi}
@@ -1482,23 +1741,30 @@ Flight days are travel days: never schedule shoots that conflict with a flight, 
 OPEN DAYS (unscheduled): ${open}
 SHOOT LIST:\n${pins}
 SCHEDULE:\n${sched}
-MEMORY (things Nathan told you to remember — from past chats too):\n${mem}
+${folLine}
 
-He wants a loose trip — suggest, don't over-schedule. Prioritize photogenic and drone-friendly places near base, golden-hour timing, realistic drive times. Flag drone restrictions when relevant (national parks = no, MN state parks need permits).
+FIELD RULES (Nathan's own operating model, learned the hard way on past trips — apply them, and gently call it out when a plan breaks one):
+${rules}
+TRIP NOTES (things Nathan told you to remember for this trip):\n${mem}
+
+DRONE RULES FOR THIS REGION:
+${r.droneNotes || 'Flag national parks (no drones) and check state park rules; prefer launching from outside park boundaries.'}
+
+How to plan: loose trip, suggest don't over-schedule. Fewer anchors, scouted deeply: when you suggest a spot, say where to park and where to launch. Keep suggestions inside the 45-minute drive radius unless the payoff is obvious, and always state the drive time from base. Weather windows beat clock windows: fog, low cloud, wet leaves and overcast often beat clean golden hour for foliage. Remind him about the commit rule when he's about to pack up early. Cold mornings: batteries warm in a pocket, shorter flights, watch for valley fog at sunrise (a hazard and the shot).
 
 FORMATTING: plain conversational text only. Never use markdown — no asterisks for bold/italic, no headers, no bullet symbols. This renders in a chat bubble, not a document.
 
 IMPORTANT — when you recommend one or more specific places worth adding to his map, ALSO append one fenced code block per place, exactly like:
 \`\`\`suggestion
-{"name":"Place Name","lat":47.1234,"lng":-91.1234,"note":"one-line why + shot idea","type":"shoot","date":"2026-07-28","time":"6:00 PM"}
+{"name":"Place Name","lat":44.1234,"lng":-71.1234,"note":"one-line why + shot idea","type":"shoot","launch":"where to put the bird up","parking":"where to leave the car","date":"2026-10-13","time":"6:00 PM"}
 \`\`\`
-lat/lng must be your best real coordinates. "type" is one of "shoot" (photo/drone spot), "food" (restaurants, cafes, bars), "shop" (stores), "stop" (worth-a-look stops that aren't shoots) — pick the right one. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.
+lat/lng must be your best real coordinates. "type" is one of "shoot" (photo/drone spot), "food" (restaurants, cafes, bars), "shop" (stores), "stop" (worth-a-look stops that aren't shoots) — pick the right one. "launch" and "parking" are strongly encouraged for shoot spots. "date" (a trip date, prefer OPEN days) and "time" are optional — include them only when suggesting a specific day. Don't mention the code block in your prose; the app turns it into an Add button.
 
-MEMORY WRITES — you CAN remember things across chats. When Nathan shares a lasting preference, fact, or decision worth keeping (e.g. "I hate crowds before 9 AM", "sunset over sunrise", "bringing the ND filters"), append a fenced block:
+MEMORY WRITES — you CAN remember things across chats. When Nathan shares a lasting preference, fact, or decision worth keeping, append a fenced block:
 \`\`\`memory
-{"note":"short single fact, max ~15 words"}
+{"note":"short single fact, max ~15 words","scope":"trip"}
 \`\`\`
-The app saves it permanently and it will appear in your MEMORY section in every future chat. Use it sparingly — durable facts only, not small talk. If he explicitly says to remember something, always write it. Don't mention the block in prose; the app shows a confirmation.
+"scope" is "trip" for things about this trip (the Airbnb has no hot water, Thursday is the Vermont day) or "global" for rules that should follow him to every future trip (never schedule sunrise after a late flight). Use it sparingly — durable facts only, not small talk. If he explicitly says to remember something, always write it. Don't mention the block in prose; the app shows a confirmation.
 
 LINKS — you CAN read them. When Nathan's message contains a URL, the app fetches the page and appends its text after a marker line "[Roamize fetched the linked page for you:]". Treat that as you having read the link — never say you can't open links. If no fetched content appears, the fetch failed; say the page wouldn't load rather than that you lack the ability.`;
 }
@@ -1510,7 +1776,7 @@ function initExplore() {
   if (list.length) loadChat(list[0].id);      // resume where you left off
   else newChat();
   document.getElementById('hintRow').innerHTML = [
-    'Plan my open days', 'Hidden gems near my Airbnb', 'Best sunrise spot on my list', 'Where should I eat?', 'Rainy-day backup plan'
+    'Where is color peaking this week?', 'Plan my open days', 'Spots within 15 min of base', 'Fog run for tomorrow morning', 'Where should I eat?', 'Rainy-day backup plan'
   ].map(h => `<button onclick="sendChat('${h}')">${h}</button>`).join('');
 }
 function greeting() {
@@ -1562,24 +1828,34 @@ document.getElementById('newChatBtn').addEventListener('click', () => { newChat(
 
 /* 🧠 memory — durable notes Explore carries into every chat */
 function memorySheet() {
-  const rows = memory().length ? memory().map((n, i) => `
+  const rowsOf = (list, fn) => list.map((n, i) => `
     <div class="chat-row">
       <div class="ct"><div class="t1" style="white-space:normal">${esc(n)}</div></div>
-      <button class="del" onclick="forgetMemory(${i})">✕</button>
-    </div>`).join('')
-    : '<div class="empty">Nothing remembered yet.<br>Tell Explore "remember that…" mid-chat, or add a note below.</div>';
-  openSheet(`<h2>🧠 Scout memory · ${esc(trip().name)}</h2>
-    <p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">Explore reads these at the start of every chat.</p>
-    ${rows}
-    <div style="height:14px"></div>
-    <div class="field"><input id="memInput" placeholder="Add a note yourself…"></div>
-    <button class="btn" onclick="addMemory()">Save note</button>`);
+      <button class="del" onclick="${fn}(${i})">✕</button>
+    </div>`).join('');
+  const tripRows = memory().length ? rowsOf(memory(), 'forgetMemory') : '<div class="empty" style="padding:14px">Nothing for this trip yet. Tell Scout "remember that…" mid-chat, or add a note below.</div>';
+  const ruleRows = globalMemory().length ? rowsOf(globalMemory(), 'forgetRule') : '<div class="empty" style="padding:14px">No field rules yet.</div>';
+  openSheet(`<h2>🧠 Scout memory</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">Scout reads all of this at the start of every chat. Field rules follow you to every trip; trip notes stay with ${esc(trip().name)}.</p>
+    <div class="section-label" style="margin-top:4px">This trip · ${esc(trip().name)}</div>
+    ${tripRows}
+    <div class="field" style="margin-top:10px"><input id="memInput" placeholder="Add a trip note…"></div>
+    <button class="btn small" onclick="addMemory()">Save trip note</button>
+    <div class="section-label" style="margin-top:22px">Field rules · every trip</div>
+    ${ruleRows}
+    <div class="field" style="margin-top:10px"><input id="ruleInput" placeholder="Add a field rule…"></div>
+    <button class="btn small ghost" onclick="addRule()">Save field rule</button>`);
 }
 function addMemory() {
   const v = document.getElementById('memInput').value.trim(); if (!v) return;
   memory().push(v); save(); memorySheet(); toast('Remembered 🧠');
 }
+function addRule() {
+  const v = document.getElementById('ruleInput').value.trim(); if (!v) return;
+  globalMemory().push(v); save(); memorySheet(); toast('Field rule saved 🧠');
+}
 function forgetMemory(i) { memory().splice(i, 1); save(); memorySheet(); }
+function forgetRule(i) { globalMemory().splice(i, 1); save(); memorySheet(); }
 document.getElementById('memoryBtn').addEventListener('click', memorySheet);
 
 function addBubble(role, text) {
@@ -1615,12 +1891,13 @@ function renderAssistantContent(el, text) {
     pushText(text.slice(last, m.index));
     if (m[1] === 'memory') {
       try {
-        const note = JSON.parse(m[2]).note;
-        if (note && !memory().includes(note)) { memory().push(note); save(); }
+        const mm = JSON.parse(m[2]), note = mm.note;
+        const list = mm.scope === 'global' ? globalMemory() : memory();
+        if (note && !list.includes(note)) { list.push(note); save(); }
         const chipEl = document.createElement('div');
         chipEl.className = 'sugg-card';
         chipEl.style.borderColor = 'var(--border)';
-        chipEl.innerHTML = `<div class="added">🧠 Remembered: <span style="color:var(--text);font-weight:500">${esc(note)}</span></div>`;
+        chipEl.innerHTML = `<div class="added">🧠 ${mm.scope === 'global' ? 'Field rule' : 'Remembered'}: <span style="color:var(--text);font-weight:500">${esc(note)}</span></div>`;
         frag.appendChild(chipEl);
       } catch (e) {}
       last = m.index + m[0].length;
@@ -1630,14 +1907,16 @@ function renderAssistantContent(el, text) {
       const s = JSON.parse(m[2]);
       const card = document.createElement('div');
       card.className = 'sugg-card';
-      card.innerHTML = `<div class="sn">${(PIN_TYPES[s.type] || PIN_TYPES.shoot).emoji} ${esc(s.name)}</div>
-        <div class="sd">${esc(s.note || '')}${s.date ? `<br>Suggested: ${esc(s.date)}${s.time ? ' · ' + esc(s.time) : ''}` : ''}</div>`;
+      const distTxt = (!isNaN(+s.lat) && !isNaN(+s.lng)) ? haversine(trip().base, { lat: +s.lat, lng: +s.lng }) + ' from base' : '';
+      card.innerHTML = `<div class="sn">${(PIN_TYPES[s.type] || PIN_TYPES.shoot).emoji} ${esc(s.name)}${distTxt ? `<span style="margin-left:auto;font-size:12px;color:var(--muted);font-weight:600">${distTxt}</span>` : ''}</div>
+        <div class="sd">${esc(s.note || '')}${s.launch ? `<br>🚁 ${esc(s.launch)}` : ''}${s.parking ? `<br>🅿️ ${esc(s.parking)}` : ''}${s.date ? `<br>Suggested: ${esc(s.date)}${s.time ? ' · ' + esc(s.time) : ''}` : ''}</div>`;
       const btn = document.createElement('button');
       btn.className = 'btn small'; btn.textContent = '+ Add to trip';
       btn.onclick = () => {
-        trip().pins.push({ id: uid(), name: s.name, lat: +s.lat, lng: +s.lng, note: s.note || '', type: PIN_TYPES[s.type] ? s.type : 'shoot', done: false });
+        const pid = uid();
+        trip().pins.push({ id: pid, name: s.name, lat: +s.lat, lng: +s.lng, note: s.note || '', launch: s.launch || '', parking: s.parking || '', type: PIN_TYPES[s.type] ? s.type : 'shoot', done: false });
         if (s.date && tripDays(trip()).includes(s.date)) {
-          (trip().schedule[s.date] = trip().schedule[s.date] || []).push({ id: uid(), title: s.name, time: s.time || '' });
+          (trip().schedule[s.date] = trip().schedule[s.date] || []).push({ id: uid(), title: s.name, time: s.time || '', pinId: pid });
         }
         save(); renderHome();
         btn.replaceWith(Object.assign(document.createElement('div'), { className: 'added', textContent: '✓ On the map' }));
@@ -1692,34 +1971,15 @@ async function sendChat(preset) {
       const ctx = await fetchLinkContext(urlMatch[0]);
       if (ctx) msgs[msgs.length - 1] = { role: 'user', content: text + '\n\n[Roamize fetched the linked page for you:]\n' + ctx };
     }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': DB.settings.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: EXPLORE_MODEL,
-        max_tokens: 1200,
-        system: systemPrompt(),
-        messages: msgs   // keep context light = cheap
-      })
-    });
-    const data = await res.json();
+    const reply = await callClaude({ system: systemPrompt(), messages: msgs, max_tokens: 1400 });
     thinking.remove();
-    if (data.error) {
-      addBubble('assistant', 'API hiccup: ' + (data.error.message || 'unknown error') + (res.status === 401 ? '\n\nDouble-check your key in Settings.' : ''));
-    } else {
-      const reply = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-      CURRENT_CHAT.messages.push({ role: 'assistant', content: reply });
-      persistChat();
-      addBubble('assistant', reply);
-    }
+    CURRENT_CHAT.messages.push({ role: 'assistant', content: reply });
+    persistChat();
+    addBubble('assistant', reply);
   } catch (e) {
     thinking.remove();
-    addBubble('assistant', 'Couldn\'t reach the API — check your connection and try again.');
+    if (e && e.message) addBubble('assistant', 'API hiccup: ' + e.message + (e.status === 401 ? '\n\nDouble-check your key in Settings.' : ''));
+    else addBubble('assistant', 'Couldn\'t reach the API — check your connection and try again.');
   }
   SENDING = false; document.getElementById('sendBtn').disabled = false;
 }
@@ -1760,24 +2020,23 @@ if (window.visualViewport) {
 }
 
 /* ============================================================
-   FORECAST 🌤 — daily shoot report, air quality, weather week,
-   and fire activity for the North Shore.
+   FORECAST 🌤 — foliage tracker, daily shoot report, air quality,
+   weather week, and fire activity for wherever the trip is.
    Data: Open-Meteo (weather + CAMS air quality), NWS alerts,
-   NIFC fire map. Report: Sonnet, ~1-2¢ per filing.
+   NIFC fire map, state foliage reports. Reports: Sonnet, ~1-2¢ each.
    ============================================================ */
-const SCOUT_SONNET = 'claude-sonnet-4-5';      // the daily report deserves Sonnet
-const REPORT_TTL   = 3 * 60 * 60 * 1000;       // re-file every 3 hours
-const CORRIDOR = [                              // Hwy 61 shooting corridor, SW → NE
-  { name: 'Duluth',        lat: 46.7867, lng: -92.1005 },
-  { name: 'Two Harbors',   lat: 47.0206, lng: -91.6712 },
-  { name: 'Silver Bay',    lat: 47.2942, lng: -91.2574 },
-  { name: 'Lutsen',        lat: 47.6641, lng: -90.7157 },
-  { name: 'Grand Marais',  lat: 47.7455, lng: -90.3343 },
-  { name: 'Grand Portage', lat: 47.9635, lng: -89.6848 }
-];
+const REPORT_TTL      = 3 * 60 * 60 * 1000;    // in-trip: re-file every 3 hours
+const REPORT_TTL_PRE  = 24 * 60 * 60 * 1000;   // pre-trip: once a day is plenty
+/* the conditions strip: the region's towns, or base + nearest shoot pins if none are set */
+function corridor() {
+  const r = region(), t = trip();
+  if (r.towns && r.towns.length) return r.towns;
+  const b = t.base, pins = t.pins.filter(p => (p.type || 'shoot') === 'shoot').slice(0, 5).map(p => ({ name: p.name, lat: p.lat, lng: p.lng }));
+  return [{ name: b.label || 'Home base', lat: b.lat, lng: b.lng }, ...pins];
+}
 function smokeFocus() {
   const b = trip().base;
-  return (b && b.lat) ? { name: b.label || 'Home base', lat: b.lat, lng: b.lng } : CORRIDOR[4];
+  return (b && b.lat) ? { name: b.label || 'Home base', lat: b.lat, lng: b.lng } : corridor()[0];
 }
 function smokeState() {
   const t = trip();
@@ -1828,9 +2087,10 @@ async function fetchAlerts() {
 }
 async function fetchFires() {
   const base = 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query';
+  const f0 = smokeFocus();
   const params = new URLSearchParams({
     where: "IncidentTypeCategory='WF'",
-    geometry: JSON.stringify({ xmin: -94.5, ymin: 45.8, xmax: -88.0, ymax: 49.4, spatialReference: { wkid: 4326 } }),
+    geometry: JSON.stringify({ xmin: f0.lng - 3, ymin: f0.lat - 2, xmax: f0.lng + 3, ymax: f0.lat + 2, spatialReference: { wkid: 4326 } }),
     geometryType: 'esriGeometryEnvelope', inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
     outFields: 'IncidentName,IncidentSize,PercentContained,FireDiscoveryDateTime',
     returnGeometry: 'true', outSR: '4326', f: 'json'
@@ -1853,7 +2113,7 @@ async function fetchWeek(lat, lng) {
   if (wkCache[key] && Date.now() - wkCache[key].at < 30 * 60 * 1000) return wkCache[key].data;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset` +
-    `&hourly=visibility,cloud_cover,wind_speed_10m,precipitation_probability` +
+    `&hourly=visibility,cloud_cover,wind_speed_10m,wind_speed_120m,wind_gusts_10m,temperature_2m,dew_point_2m,precipitation_probability` +
     `&current=temperature_2m,wind_speed_10m,wind_gusts_10m,cloud_cover,weather_code` +
     `&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`;
   const res = await fetch(url); const data = await res.json();
@@ -1874,25 +2134,28 @@ function renderSmoke() {
   const t = trip();
   const today = isoDate(new Date());
   const inTrip = today >= t.start && today <= t.end;
+  const hasFoliage = (region().foliageSources || []).length > 0;
   el.innerHTML = `
     <div class="section-label">Scout's shoot report · ${inTrip ? 'Day ' + (Math.round((parseDate(today) - parseDate(t.start)) / 86400000) + 1) : fmtDate(new Date())}</div>
     <div class="card" id="reportCard"><div class="empty">Waiting on the data…</div></div>
-    <div class="section-label">Current air quality · Hwy 61 corridor</div>
-    <div class="card" id="aqNow"><div class="empty">Reading the air over Superior…</div></div>
+    ${hasFoliage ? `<div class="section-label">🍁 Foliage tracker · ${esc(region().nearRegion || region().label)} <button onclick="pullFoliage(true)">↻ Pull now</button></div>
+    <div class="card" id="foliageCard"><div class="empty">Waiting on Scout…</div></div>` : ''}
     <div class="section-label">This week at ${esc(smokeFocus().name)}</div>
     <div class="card" id="weekCard"><div class="empty">Loading the week…</div></div>
+    <div class="section-label">Air quality · ${esc(region().label)}</div>
+    <div class="card" id="aqNow"><div class="empty">Reading the air…</div></div>
     <div class="section-label">Active fires nearby</div>
     <div class="card" id="fireList"><div class="empty">Checking the national fire map…</div></div>
     <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:22px;line-height:1.55">
-      Weather + air quality: Open-Meteo · Alerts: weather.gov · Fires: NIFC national map.<br>
-      US incidents only — smoke drifting from Canadian fires still shows in the AQI numbers.</p>`;
+      Weather + air quality: Open-Meteo · Alerts: weather.gov · Fires: NIFC national map · Foliage: official state reports, read daily by Scout.</p>`;
+  if (hasFoliage) { renderFoliage(); pullFoliage(false); }
   loadSmoke();
 }
 
 async function loadSmoke() {
-  const focus = smokeFocus();
+  const focus = smokeFocus(), CORR = corridor();
   const [corrRes, focusRes, alertsRes, firesRes, weekRes] = await Promise.all([
-    Promise.allSettled(CORRIDOR.map(p => fetchAQ(p.lat, p.lng))),
+    Promise.allSettled(CORR.map(p => fetchAQ(p.lat, p.lng))),
     fetchAQ(focus.lat, focus.lng).catch(() => null),
     fetchAlerts().catch(() => null),
     fetchFires().catch(() => null),
@@ -1901,7 +2164,7 @@ async function loadSmoke() {
   if (!document.getElementById('aqNow')) return;   // user left the tab / re-rendered
 
   /* --- current corridor --- */
-  const corridorVals = CORRIDOR.map((p, i) => {
+  const corridorVals = CORR.map((p, i) => {
     const r = corrRes[i];
     const ok = r.status === 'fulfilled' && r.value.current && r.value.current.us_aqi != null;
     return { name: p.name, aqi: ok ? Math.round(r.value.current.us_aqi) : null, pm: ok ? r.value.current.pm2_5 : null };
@@ -1947,7 +2210,7 @@ async function loadSmoke() {
   if (firesRes === null) {
     fireEl.innerHTML = `<div class="empty">Couldn't reach the fire map — <a href="https://fire.airnow.gov" target="_blank" style="color:var(--accent-light)">check fire.airnow.gov</a> directly.</div>`;
   } else if (!firesRes.length) {
-    fireEl.innerHTML = `<div style="font-size:13.5px;color:var(--good);font-weight:600;padding:4px 0">✓ No active US wildfire incidents on the map near the North Shore</div>`;
+    fireEl.innerHTML = `<div style="font-size:13.5px;color:var(--good);font-weight:600;padding:4px 0">✓ No active US wildfire incidents on the map near ${esc(region().label)}</div>`;
   } else {
     const fmtAc = a => a == null ? '?' : a >= 1000 ? (Math.round(a / 100) / 10) + 'k ac' : Math.round(a) + ' ac';
     fireEl.innerHTML = firesRes.slice(0, 4).map(f => `
@@ -1964,14 +2227,18 @@ async function loadSmoke() {
     weekRes.hourly.time.forEach((tm, i) => {
       const h = +tm.slice(11, 13);
       if (tm.slice(0, 10) === todayIso && h >= 5 && h <= 22 && h % 2 === 1) {
+        const temp = weekRes.hourly.temperature_2m?.[i], dew = weekRes.hourly.dew_point_2m?.[i];
         hourlySlim.push({
           time: tm.slice(11), visibilityMi: weekRes.hourly.visibility ? Math.round(weekRes.hourly.visibility[i] / 160.9) / 10 : null,
           cloudPct: weekRes.hourly.cloud_cover?.[i], windMph: Math.round(weekRes.hourly.wind_speed_10m?.[i] ?? 0),
+          windAt400ftMph: Math.round(weekRes.hourly.wind_speed_120m?.[i] ?? 0), gustMph: Math.round(weekRes.hourly.wind_gusts_10m?.[i] ?? 0),
+          tempF: temp != null ? Math.round(temp) : null, dewSpreadF: (temp != null && dew != null) ? Math.round(temp - dew) : null,
           precipProb: weekRes.hourly.precipitation_probability?.[i]
         });
       }
     });
   }
+  const fol = foliageState().report?.data;
   const aqHourlyToday = [];
   if (focusRes?.hourly?.time) {
     focusRes.hourly.time.forEach((tm, i) => {
@@ -1988,10 +2255,13 @@ async function loadSmoke() {
     currentCorridorAQI: corridorVals,
     aqiTodayHourly: aqHourlyToday,
     aqiDailyMaxForecast: days,
+    todayLowF: weekRes?.daily?.temperature_2m_min?.[0] ?? null,
+    tomorrowLowF: weekRes?.daily?.temperature_2m_min?.[1] ?? null,
     weekDaily: weekRes?.daily || null,
     nwsAlerts: (alertsRes || []).map(a => a.event + (a.headline ? ': ' + a.headline : '')),
     firesNearby: (firesRes || []).slice(0, 6).map(f => ({ name: f.name, acres: f.acres, pctContained: f.contained, milesAway: f.mi })),
-    unshotSpots: trip().pins.filter(p => (p.type || 'shoot') === 'shoot' && !p.done).map(p => p.name + (p.note ? ' — ' + p.note : ''))
+    foliage: fol ? { pctNearBase: fol.nearPct, stage: fol.stage, summary: fol.summary, bestDrive: fol.bestDrive, peakEta: fol.peakEta, regions: fol.regions } : null,
+    unshotSpots: trip().pins.filter(p => (p.type || 'shoot') === 'shoot' && !p.done).map(p => p.name + ' (' + haversine(trip().base, p) + ')' + (p.note ? ' — ' + p.note : '') + (p.launch ? ' | launch: ' + p.launch : ''))
   };
   maybeReport(false);
 }
@@ -2014,53 +2284,46 @@ function renderWeekRows(week, aqByDate) {
 
 /* ---------- Scout's daily shoot report (Sonnet, 3-hr cache) ---------- */
 let REPORT_RUNNING = false;
-function reportFresh(st, today) { return st.report && st.report.date === today && (Date.now() - st.report.at < REPORT_TTL); }
+function reportFresh(st, today, ttl) { return st.report && st.report.date === today && (Date.now() - st.report.at < ttl); }
+/* pull the {...} out of a model reply, tolerating stray prose or fences */
+function parseJsonReply(raw) {
+  const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+  if (a < 0 || b <= a) throw new Error('no JSON in reply');
+  return JSON.parse(raw.slice(a, b + 1));
+}
 async function maybeReport(force) {
   const card = document.getElementById('reportCard'); if (!card) return;
-  const st = smokeState(), t = trip();
+  const st = smokeState(), t = trip(), r = region();
   const today = isoDate(new Date());
   const inTrip = today >= t.start && today <= t.end;
-  if (!inTrip && !force) {
-    if (st.report && st.report.date === today) { renderReport(); return; }   // a test report from earlier today
-    card.innerHTML = `<div class="empty" style="padding:16px 8px;line-height:1.6">Scout files a shoot report here every trip morning — first one lands <b style="color:var(--text)">${fmtDate(parseDate(t.start))}</b>.<br><br>
-      <button class="btn ghost small" onclick="maybeReport(true)">🎬 Generate a test report for today</button></div>`;
-    return;
-  }
+  const daysOut = Math.round((parseDate(t.start) - parseDate(today)) / 86400000);
   if (!DB.settings.apiKey) {
     card.innerHTML = `<div class="empty">Add your Anthropic API key in Settings and Scout will file a daily shoot report here.</div>`;
     return;
   }
-  if (reportFresh(st, today) && !force) { renderReport(); return; }
+  if (reportFresh(st, today, inTrip ? REPORT_TTL : REPORT_TTL_PRE) && !force) { renderReport(); return; }
   if (REPORT_RUNNING) return;
   if (!SMOKE_DATA) { if (st.report && st.report.date === today) renderReport(); return; }
   REPORT_RUNNING = true;
-  card.innerHTML = `<div class="empty">Scout is checking the light, the wind, and the smoke…</div>`;
-  const sys = `You are Scout, the field producer inside Roamize, ${DB.settings.userName}'s personal trip app. His trip: ${t.emoji} ${t.name}, ${t.start} to ${t.end}, based at ${t.base.label} in the Grand Marais area, shooting solo photo + drone along Highway 61.
+  card.innerHTML = `<div class="empty">Scout is checking the light, the wind, and the leaves…</div>`;
+  const sys = `You are Scout, the field producer inside Roamize, ${DB.settings.userName}'s personal trip app. His trip: ${t.emoji} ${t.name}, ${t.start} to ${t.end}, based at ${t.base.label}${t.base.address ? ' (' + t.base.address + ')' : ''} in the ${r.label}, shooting solo photo + drone.
 YOUR PERSONALITY:\n${DB.settings.persona || DEFAULT_PERSONA}
-You are filing TODAY'S SHOOT REPORT. You get a JSON snapshot: current weather, today's hourly conditions (visibility in miles, cloud %, wind mph, rain chance), air quality now and through the day, sunrise/sunset, NWS alerts, nearby fires, and his still-unshot spots.
-Think like a DP planning the day: smoke/haze level and whether it kills contrast or adds mood, visibility, cloud character for light (bald sun vs texture), wind for the drone (≤12 easy, 12-18 sporty, 18+ grounded), rain windows, golden hour quality.
-${inTrip ? '' : 'NOTE: the trip has not started yet — this is a DRY-RUN report for today at the trip location, same format, so he can test the feature.'}
+You are filing TODAY'S SHOOT REPORT for the base location. You get a JSON snapshot: current weather, today's hourly conditions (visibility in miles, cloud %, wind at ground and at ~400 ft, gusts, temp, dew-point spread, rain chance), today's and tomorrow's overnight lows, air quality, sunrise/sunset, NWS alerts, nearby fires, the foliage tracker (percent color near base, stage, regional breakdown, best drives), and his still-unshot spots with launch notes.
+Think like a DP planning a fall shoot day:
+- FOLIAGE is the headline variable on this trip. Weigh color stage heavily in the grade. Note where the color is best relative to base.
+- LIGHT: he shoots best in atmospheric conditions, not clean golden hour. Fog, low cloud, overcast and wet leaves saturate color; bald sun flattens it. A dew-point spread ≤3°F around dawn with light wind = valley fog likely (that is both a hazard for the drone and the shot).
+- WIND for the drone: judge by the 400 ft number, not ground. ≤12 easy, 12-18 sporty, 18+ grounded. Gusts matter.
+- COLD: below 40°F, batteries drain fast and warn. Say so when it applies (keep them warm, shorter flights). Frost at dawn is a bonus, not a problem.
+- Rain windows, visibility, air quality only if it actually matters.
+${inTrip ? '' : `NOTE: the trip starts in ${daysOut} days. This is a PRE-TRIP report: conditions at the base location today, same format, so he can watch the season build and learn the pattern. Say what today's weather would have meant for a shoot, and where the color stands.`}
 Respond with ONLY a raw JSON object, no markdown, no fences:
-{"grade":"A"|"A-"|"B+"|"B"|"B-"|"C+"|"C"|"C-"|"D"|"F","headline":"<one punchy line about the day>","summary":"<2-4 plain sentences: air/smoke, sky character, visibility, drone-ability>","window":"<best shooting window today, with times>","spot":"<which unshot spot fits today best and why, one line — or empty string if none>","watch":"<the one thing that could change the day>"}
+{"grade":"A"|"A-"|"B+"|"B"|"B-"|"C+"|"C"|"C-"|"D"|"F","headline":"<one punchy line about the day>","summary":"<2-4 plain sentences: foliage stage, sky character, wind for the drone, anything cold/fog-related>","window":"<best shooting window today, with times>","spot":"<which unshot spot fits today best and why, one line — or empty string if none>","watch":"<the one thing that could change the day>"}
 Grade = overall shooting-day quality. Plain English, no jargon.`;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': DB.settings.apiKey, 'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: SCOUT_SONNET, max_tokens: 700, system: sys,
-        messages: [{ role: 'user', content: 'Now: ' + new Date().toLocaleString('en-US') + '. Data snapshot:\n' + JSON.stringify(SMOKE_DATA) }]
-      })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API error');
-    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const r = JSON.parse(raw.replace(/^[\s\S]*?\{/, '{').replace(/\}[\s\S]*$/, '}'));
-    if (!r.grade || !r.summary) throw new Error('bad report format');
-    st.report = { date: today, at: Date.now(), data: r, test: !inTrip }; save();
+    const raw = await callClaude({ system: sys, max_tokens: 700, messages: [{ role: 'user', content: 'Now: ' + new Date().toLocaleString('en-US') + '. Data snapshot:\n' + JSON.stringify(SMOKE_DATA) }] });
+    const rep = parseJsonReply(raw);
+    if (!rep.grade || !rep.summary) throw new Error('bad report format');
+    st.report = { date: today, at: Date.now(), data: rep, test: !inTrip, daysOut }; save();
     renderReport();
   } catch (e) {
     if (st.report && st.report.date === today) renderReport('· refresh failed, showing last report');
@@ -2077,7 +2340,7 @@ function renderReport(note) {
   const st = smokeState(); if (!card || !st.report) return;
   const r = st.report.data, col = gradeColor(r.grade);
   card.innerHTML = `
-    ${st.report.test ? `<div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">DRY RUN — TRIP HASN'T STARTED</div>` : ''}
+    ${st.report.test ? `<div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">PRE-TRIP · ${st.report.daysOut > 0 ? st.report.daysOut + ' DAYS OUT · ' : ''}CONDITIONS AT BASE TODAY</div>` : ''}
     <div class="report-top">
       <span class="report-grade" style="color:${col}">${esc(r.grade)}</span>
       <div><div class="verdict-head" style="margin:0">${esc(r.headline || '')}</div>
@@ -2088,7 +2351,7 @@ function renderReport(note) {
     ${r.spot ? `<div class="report-line"><span class="ri">📷</span><span><b>Today's spot:</b> ${esc(r.spot)}</span></div>` : ''}
     ${r.watch ? `<div class="report-line"><span class="ri">👁</span><span><b>Watch:</b> ${esc(r.watch)}</span></div>` : ''}
     <div class="verdict-meta">
-      <span>Filed ${new Date(st.report.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · re-files every 3 hrs ${note ? esc(note) : ''}</span>
+      <span>Filed ${new Date(st.report.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · ${st.report.test ? 'once a day until the trip' : 're-files every 3 hrs'} ${note ? esc(note) : ''}</span>
       <button onclick="maybeReport(true)">↻ Re-file now</button>
     </div>`;
 }
@@ -2097,6 +2360,129 @@ function renderReport(note) {
 setInterval(() => {
   if (document.getElementById('tab-smoke').classList.contains('active')) maybeReport(false);
 }, 10 * 60 * 1000);
+
+/* ============================================================
+   🍁 FOLIAGE TRACKER — Scout reads the official state foliage
+   reports (NH twice weekly, VT + ME weekly) once a day, and
+   turns them into a % near base, a stage, and a regional table.
+   Runs from today until the trip ends, so you can watch the
+   season build while you plan. ~1-2¢ per pull.
+   ============================================================ */
+let FOL_RUNNING = false;
+function foliageState() { const t = trip(); return t.foliage = t.foliage || {}; }
+function foliageColor(pct) {
+  const p = +pct || 0;
+  if (p < 20) return { fg: '#6cc999', bg: 'rgba(108,201,153,.15)', word: 'mostly green' };
+  if (p < 45) return { fg: '#d9c65f', bg: 'rgba(217,198,95,.15)', word: 'turning' };
+  if (p < 70) return { fg: '#e6993f', bg: 'rgba(230,153,63,.16)', word: 'building' };
+  if (p < 90) return { fg: '#d96b6b', bg: 'rgba(217,107,107,.18)', word: 'near peak' };
+  return { fg: '#c9563a', bg: 'rgba(201,86,58,.2)', word: 'peak' };
+}
+async function fetchReportText(url) {
+  try {
+    const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 14000);
+    const res = await fetch('https://r.jina.ai/' + url, { signal: ctrl.signal });
+    clearTimeout(to);
+    if (!res.ok) return null;
+    let md = await res.text();
+    md = md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\n{3,}/g, '\n\n');
+    /* skip the nav: start at the first line that smells like a report */
+    const i = md.search(/report for|foliage report|color change|percent|peak|% /i);
+    if (i > 400) md = md.slice(Math.max(0, i - 200));
+    return md.length < 200 ? null : md.slice(0, 9000);
+  } catch (e) { return null; }
+}
+async function pullFoliage(force) {
+  const st = foliageState(), t = trip(), r = region();
+  const srcs = r.foliageSources || [];
+  const today = isoDate(new Date());
+  if (!srcs.length) return;
+  if (st.report && st.report.date === today && !force) { renderFoliage(); return; }
+  if (!DB.settings.apiKey) { renderFoliage(); return; }
+  if (FOL_RUNNING) return;
+  FOL_RUNNING = true;
+  const card = document.getElementById('foliageCard');
+  if (card) card.innerHTML = `<div class="empty">Scout is reading the ${srcs.length} state reports…</div>`;
+  try {
+    const texts = await Promise.all(srcs.map(s => fetchReportText(s.url)));
+    const got = srcs.map((s, i) => ({ ...s, ok: !!texts[i] }));
+    if (!got.some(x => x.ok)) throw new Error('none of the reports would load');
+    const bundle = srcs.map((s, i) => texts[i] ? `===== ${s.state} · ${s.name} (${s.url}) =====\n${texts[i]}` : `===== ${s.state} · ${s.name} — FAILED TO LOAD =====`).join('\n\n');
+    const sys = `You are Scout, the field producer inside Roamize, ${DB.settings.userName}'s trip app. Trip: ${t.name}, ${t.start} to ${t.end}, based at ${t.base.address || t.base.label} in the ${r.label}. The base sits in the report region "${r.nearRegion || srcs[0].near || 'nearest region'}".
+You are reading the official state fall-foliage reports (pasted below, one per state, freshly fetched) and filing today's FOLIAGE TRACKER. Extract the numbers the reports actually give. Don't invent percentages: if a region only has words (e.g. "moderate", "near peak"), convert to a sensible percent and say so in the label. Percent = share of trees that have changed color; past peak means leaf drop is well underway.
+Respond with ONLY a raw JSON object, no markdown, no fences:
+{"nearPct":<integer 0-100, the midpoint for the region that contains base>,
+ "nearLabel":"<the source's own wording for that region, e.g. 25-45% color change>",
+ "nearRegion":"<that region's name>",
+ "stage":"<one of: green, early, turning, building, near peak, peak, past peak, bare>",
+ "headline":"<one punchy line about where the color stands for HIS trip>",
+ "summary":"<2-3 plain sentences: what the base region looks like now, how fast it's moving, what that means for ${t.start} to ${t.end}>",
+ "peakEta":"<best estimate of peak dates for the base region, and whether the trip catches it>",
+ "bestDrive":"<the single best drive or area for color RIGHT NOW within ~90 min of base, taken from the reports' own best-bets>",
+ "regions":[{"name":"<region>","state":"NH|VT|ME","pct":<integer>,"label":"<source wording>"} ... every region each loaded report lists, in the report's own order],
+ "reportDates":{"NH":"<date on the NH report or unknown>","VT":"<date>","ME":"<date>"}}`;
+    const raw = await callClaude({ system: sys, max_tokens: 1600, messages: [{ role: 'user', content: 'Today is ' + new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '.\n\n' + bundle }] });
+    const data = parseJsonReply(raw);
+    if (data.nearPct == null || !data.stage) throw new Error('bad tracker format');
+    data.nearPct = Math.max(0, Math.min(100, Math.round(+data.nearPct)));
+    /* keep a little history so the trend is visible */
+    const hist = (st.history || []).filter(h => h.date !== today);
+    hist.push({ date: today, pct: data.nearPct }); st.history = hist.slice(-30);
+    st.report = { date: today, at: Date.now(), data, sources: got }; save();
+    renderFoliage(); renderGolden();
+    if (!document.getElementById('tab-smoke').classList.contains('active')) toast(`🍁 Foliage: ${data.nearPct}% at ${data.nearRegion || 'base'} · ${data.stage}`);
+  } catch (e) {
+    if (st.report) renderFoliage('· today\'s pull failed, showing ' + st.report.date);
+    else if (card) card.innerHTML = `<div class="empty">Couldn't pull the reports — ${esc(e.message || 'error')}.<br><br><button class="btn small" onclick="pullFoliage(true)">Try again</button></div>`;
+  }
+  FOL_RUNNING = false;
+}
+function renderFoliage(note) {
+  const card = document.getElementById('foliageCard'); if (!card) return;
+  const st = foliageState(), t = trip();
+  if (!DB.settings.apiKey && !st.report) { card.innerHTML = `<div class="empty">Add your Anthropic API key in Settings and Scout will read the NH, VT and ME foliage reports every day.</div>`; return; }
+  if (!st.report) { card.innerHTML = `<div class="empty">First pull coming up…</div>`; return; }
+  const d = st.report.data, c = foliageColor(d.nearPct);
+  const hist = st.history || [];
+  const prev = hist.length > 1 ? hist[hist.length - 2] : null;
+  const delta = prev ? d.nearPct - prev.pct : null;
+  const trip0 = parseDate(t.start), daysOut = Math.round((trip0 - parseDate(isoDate(new Date()))) / 86400000);
+  const rows = (d.regions || []).map(x => {
+    const rc = foliageColor(x.pct), isNear = d.nearRegion && x.name && x.name.toLowerCase().includes((d.nearRegion || '').toLowerCase().split(' ')[0]);
+    return `<div class="aq-row" style="grid-template-columns:118px 1fr 34px 86px;${isNear ? 'box-shadow:inset 3px 0 0 var(--accent);padding-left:8px' : ''}">
+      <span class="aq-town" title="${esc(x.name)}">${esc(x.name)} <small style="opacity:.7">${esc(x.state || '')}</small></span>
+      <span class="aq-track"><span class="aq-fill" style="width:${Math.max(2, Math.min(100, +x.pct || 0))}%;background:${rc.fg}"></span></span>
+      <span class="aq-val" style="color:${rc.fg}">${x.pct ?? '—'}</span>
+      <span class="aq-cat" style="color:${rc.fg}">${esc(x.label || rc.word)}</span></div>`;
+  }).join('');
+  const srcLine = (st.report.sources || []).map(s => `<span style="color:${s.ok ? 'var(--good)' : 'var(--bad)'}">${s.ok ? '✓' : '✗'} ${esc(s.state)}${d.reportDates?.[s.state] && d.reportDates[s.state] !== 'unknown' ? ' ' + esc(d.reportDates[s.state]) : ''}</span>`).join(' · ');
+  card.innerHTML = `
+    <div class="fol-hero">
+      <div class="fol-num" style="color:${c.fg}">${d.nearPct}<small>%</small></div>
+      <div style="flex:1;min-width:0">
+        <div class="aq-bandlabel" style="color:${c.fg};text-transform:capitalize">${esc(d.stage)}${delta != null ? ` <span style="font-size:12px;color:var(--muted);font-weight:600">${delta >= 0 ? '+' : ''}${delta} since ${fmtDate(parseDate(prev.date), { month: 'short', day: 'numeric' })}</span>` : ''}</div>
+        <div class="aq-sub">${esc(d.nearRegion || '')}${d.nearLabel ? ' · ' + esc(d.nearLabel) : ''}${daysOut > 0 ? ` · trip in ${daysOut} day${daysOut === 1 ? '' : 's'}` : ''}</div>
+      </div>
+    </div>
+    <div class="fol-gauge"><span class="fol-mark" style="left:${d.nearPct}%"></span></div>
+    <div class="verdict-head" style="margin-top:12px">${esc(d.headline || '')}</div>
+    <p class="verdict-why">${esc(d.summary || '')}</p>
+    ${d.peakEta ? `<div class="report-line"><span class="ri">🎯</span><span><b>Peak near base:</b> ${esc(d.peakEta)}</span></div>` : ''}
+    ${d.bestDrive ? `<div class="report-line"><span class="ri">🚗</span><span><b>Best color right now:</b> ${esc(d.bestDrive)}</span></div>` : ''}
+    ${rows ? `<div class="section-label" style="margin:16px 0 6px">By region</div>${rows}` : ''}
+    <div class="verdict-meta">
+      <span>Pulled ${fmtDate(parseDate(st.report.date), { month: 'short', day: 'numeric' })} ${new Date(st.report.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · daily · ${srcLine} ${note ? esc(note) : ''}</span>
+      <button onclick="pullFoliage(true)">↻ Pull now</button>
+    </div>`;
+}
+/* the daily pull happens on open, whichever tab you land on, so the number on Home is never stale */
+function foliageAutoPull() {
+  const st = foliageState();
+  if (!(region().foliageSources || []).length || !DB.settings.apiKey) return;
+  if (st.report && st.report.date === isoDate(new Date())) return;
+  if (isoDate(new Date()) > trip().end) return;   // season's over for this trip
+  pullFoliage(false);
+}
 
 /* ============================================================
    SCOUT BUBBLE — same brain, chats & memory; now floats
@@ -2114,12 +2500,14 @@ function closeScout() { document.getElementById('scoutPanel').classList.remove('
    Refreshes on open, caches 6h → fresh at least twice a day.
    ============================================================ */
 const FEED_TTL = 6 * 60 * 60 * 1000;
-const CURATED = [
-  { kind: 'cam', videoId: 'n0H5FkWkjjs', title: 'Grand Marais Harbor — live cam', source: 'YouTube Live', sub: 'Real-time look at harbor conditions. If the stream restarted, tap Scout This for the link.' },
-  { kind: 'guide', url: 'https://wanderlog.com/list/itinerary/133552/5-day-grand-marais-itinerary/shared', title: '5-Day Grand Marais Itinerary', source: 'Wanderlog', sub: 'Day-by-day plan built around your exact base.' },
-  { kind: 'guide', url: 'https://northshorevisitor.com/attractions/', title: 'North Shore attractions — mile-by-mile up Hwy 61', source: 'North Shore Visitor', sub: 'The all-in-one guide: parks, waterfalls, overlooks, and stops keyed to highway mileposts.' },
-  { kind: 'guide', url: 'https://www.visitcookcounty.com/things-to-do/', title: 'Things to do in Cook County', source: 'Visit Cook County', sub: 'The official local guide for the Grand Marais / Lutsen / Grand Portage end of the shore.' }
-];
+/* curated cards come from the trip's region block (guides + optional live cams) */
+function curated() {
+  const r = region();
+  return [
+    ...(r.cams || []).map(c => ({ kind: 'cam', ...c })),
+    ...(r.guides || []).map(g => ({ kind: 'guide', ...g }))
+  ];
+}
 let FEED_ITEMS = null, FEED_FILTER = 'all';
 function savedList() { const t = trip(); return t.saved = t.saved || []; }
 function feedKey() { return 'roamize.feed.' + trip().id; }
@@ -2156,7 +2544,7 @@ async function loadFeed(force) {
   let cache = null;
   try { cache = JSON.parse(localStorage.getItem(feedKey())); } catch (e) {}
   if (cache && !force && Date.now() - cache.at < FEED_TTL) { FEED_ITEMS = cache.items; renderFeedItems(); return; }
-  scroll.innerHTML = '<div class="empty">Scouting fresh finds along the shore…</div>';
+  scroll.innerHTML = `<div class="empty">Scouting fresh finds around ${esc(region().label)}…</div>`;
   const [flickr, wiki, yt] = await Promise.all([
     fetchFlickr().catch(() => []),
     fetchWikiPhotos().catch(() => []),
@@ -2243,8 +2631,9 @@ async function fetchYT() {
 }
 
 function mixFeed(flickr, wiki, yt) {
-  const cams = CURATED.filter(c => c.kind === 'cam').map(c => ({ ...c, id: 'cam' + c.videoId, url: 'https://www.youtube.com/watch?v=' + c.videoId, live: true, at: Date.now() }));
-  const guides = CURATED.filter(c => c.kind === 'guide').map(c => ({ ...c, id: 'g' + safeId(c.url), at: 0 }));
+  const CUR = curated();
+  const cams = CUR.filter(c => c.kind === 'cam').map(c => ({ ...c, id: 'cam' + c.videoId, url: 'https://www.youtube.com/watch?v=' + c.videoId, live: true, at: Date.now() }));
+  const guides = CUR.filter(c => c.kind === 'guide').map(c => ({ ...c, id: 'g' + safeId(c.url), at: 0 }));
   const liveYt = yt.filter(v => v.live);
   const rest = [...flickr, ...wiki, ...yt.filter(v => !v.live)].sort((a, b) => b.at - a.at);
   const out = [...cams, ...liveYt];
@@ -2445,6 +2834,8 @@ function openAppleMaps() {
 window.addEventListener('resize', () => { if (MAP) setTimeout(() => MAP.invalidateSize(), 120); });
 renderAll();
 switchTab('home');
+foliageAutoPull();                                         // daily Scout pull, from now until the trip ends
+document.addEventListener('visibilitychange', () => { if (!document.hidden) foliageAutoPull(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
